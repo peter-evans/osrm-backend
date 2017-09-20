@@ -167,16 +167,6 @@ RoutingAlgorithms<Algorithm>::DirectShortestPathSearch(const PhantomNodes &phant
 }
 
 template <typename Algorithm>
-std::vector<EdgeWeight>
-RoutingAlgorithms<Algorithm>::ManyToManySearch(const std::vector<PhantomNode> &phantom_nodes,
-                                               const std::vector<std::size_t> &source_indices,
-                                               const std::vector<std::size_t> &target_indices) const
-{
-    return routing_algorithms::manyToManySearch(
-        heaps, *facade, phantom_nodes, source_indices, target_indices);
-}
-
-template <typename Algorithm>
 inline routing_algorithms::SubMatchingList RoutingAlgorithms<Algorithm>::MapMatching(
     const routing_algorithms::CandidateLists &candidates_list,
     const std::vector<util::Coordinate> &trace_coordinates,
