@@ -1,6 +1,7 @@
 #ifndef OSRM_EXTRACTOR_NODE_DATA_CONTAINER_HPP
 #define OSRM_EXTRACTOR_NODE_DATA_CONTAINER_HPP
 
+#include "extractor/node_based_edge.hpp"
 #include "extractor/class_data.hpp"
 #include "extractor/travel_mode.hpp"
 
@@ -114,6 +115,11 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
         return geometry_ids.size();
     }
 
+    // access the shared data of a set of nodes
+    NodeBasedEdgeSharedData operator[](const EdgeID eid) const{
+        return NodeBasedEdgeSharedData();
+    }
+
   private:
     Vector<GeometryID> geometry_ids;
     Vector<NameID> name_ids;
@@ -128,7 +134,7 @@ using EdgeBasedNodeDataExternalContainer =
 using EdgeBasedNodeDataContainer =
     detail::EdgeBasedNodeDataContainerImpl<storage::Ownership::Container>;
 using EdgeBasedNodeDataView = detail::EdgeBasedNodeDataContainerImpl<storage::Ownership::View>;
-}
-}
+} // namespace extractor
+} // namespace osrm
 
 #endif

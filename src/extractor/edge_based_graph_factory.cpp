@@ -61,6 +61,7 @@ namespace extractor
 // Configuration to find representative candidate for turn angle calculations
 EdgeBasedGraphFactory::EdgeBasedGraphFactory(
     std::shared_ptr<util::NodeBasedDynamicGraph> node_based_graph,
+    EdgeBasedNodeDataContainer const &node_data_container,
     CompressedEdgeContainer &compressed_edge_container,
     const std::unordered_set<NodeID> &barrier_nodes,
     const std::unordered_set<NodeID> &traffic_lights,
@@ -69,7 +70,8 @@ EdgeBasedGraphFactory::EdgeBasedGraphFactory(
     ProfileProperties profile_properties,
     const util::NameTable &name_table,
     guidance::LaneDescriptionMap &lane_description_map)
-    : m_number_of_edge_based_nodes(0), m_coordinates(coordinates), m_osm_node_ids(osm_node_ids),
+    : m_edge_based_node_container(node_data_container), m_number_of_edge_based_nodes(0),
+      m_coordinates(coordinates), m_osm_node_ids(osm_node_ids),
       m_node_based_graph(std::move(node_based_graph)), m_barrier_nodes(barrier_nodes),
       m_traffic_lights(traffic_lights), m_compressed_edge_container(compressed_edge_container),
       profile_properties(std::move(profile_properties)), name_table(name_table),
@@ -83,12 +85,6 @@ void EdgeBasedGraphFactory::GetEdgeBasedEdges(
     BOOST_ASSERT_MSG(0 == output_edge_list.size(), "Vector is not empty");
     using std::swap; // Koenig swap
     swap(m_edge_based_edge_list, output_edge_list);
-}
-
-void EdgeBasedGraphFactory::GetEdgeBasedNodes(EdgeBasedNodeDataContainer &data_container)
-{
-    using std::swap; // Koenig swap
-    swap(data_container, m_edge_based_node_container);
 }
 
 void EdgeBasedGraphFactory::GetEdgeBasedNodeSegments(std::vector<EdgeBasedNodeSegment> &nodes)
@@ -164,6 +160,7 @@ NBGToEBG EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const N
 
     // Add edge-based node data for forward and reverse nodes indexed by edge_id
     BOOST_ASSERT(forward_data.edge_id != SPECIAL_EDGEID);
+/*
     m_edge_based_node_container.SetData(forward_data.edge_id,
                                         GeometryID{packed_geometry_id, true},
                                         forward_data.name_id,
@@ -177,7 +174,7 @@ NBGToEBG EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const N
                                             reverse_data.travel_mode,
                                             reverse_data.classes);
     }
-
+*/
     // Add segments of edge-based nodes
     for (const auto i : util::irange(std::size_t{0}, segment_count))
     {
@@ -194,20 +191,20 @@ NBGToEBG EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const N
         BOOST_ASSERT(current_edge_target_coordinate_id != current_edge_source_coordinate_id);
 
         // build edges
-        m_edge_based_node_segments.emplace_back(edge_id_to_segment_id(forward_data.edge_id),
-                                                edge_id_to_segment_id(reverse_data.edge_id),
+        m_edge_based_node_segments.emplace_back(edge_id_to_segment_id(forward_data.shared_data_id),
+                                                edge_id_to_segment_id(reverse_data.shared_data_id),
                                                 current_edge_source_coordinate_id,
                                                 current_edge_target_coordinate_id,
                                                 i);
 
         m_edge_based_node_is_startpoint.push_back(
-            (forward_data.startpoint || reverse_data.startpoint));
+            m_edge_based_node_container[forward_data.shared_data_id].startpoint || m_edge_based_node_container[reverse_data.shared_data_id].startpoint);
         current_edge_source_coordinate_id = current_edge_target_coordinate_id;
     }
 
     BOOST_ASSERT(current_edge_source_coordinate_id == node_v);
 
-    return NBGToEBG{node_u, node_v, forward_data.edge_id, reverse_data.edge_id};
+    return NBGToEBG{node_u, node_v, forward_data.shared_data_id, reverse_data.shared_data_id};
 }
 
 void EdgeBasedGraphFactory::Run(ScriptingEnvironment &scripting_environment,
@@ -297,7 +294,7 @@ EdgeBasedGraphFactory::GenerateEdgeExpandedNodes(const WayRestrictionMap &way_re
     // Allocate memory for edge-based nodes
     // In addition to the normal edges, allocate enough space for copied edges from
     // via-way-restrictions
-    m_edge_based_node_container = EdgeBasedNodeDataContainer(m_number_of_edge_based_nodes);
+    //m_edge_based_node_container = EdgeBasedNodeDataContainer(m_number_of_edge_based_nodes);
 
     util::Log() << "Generating edge expanded nodes ... ";
     // indicating a normal node within the edge-based graph. This node represents an edge in the
@@ -372,6 +369,7 @@ EdgeBasedGraphFactory::GenerateEdgeExpandedNodes(const WayRestrictionMap &way_re
             BOOST_ASSERT(edge_data.edge_id != SPECIAL_NODEID);
 
             BOOST_ASSERT(edge_data.edge_id < m_edge_based_node_container.Size());
+            /*
             m_edge_based_node_container.SetData(
                 edge_based_node_id,
                 // fetch the known geometry ID
@@ -379,6 +377,7 @@ EdgeBasedGraphFactory::GenerateEdgeExpandedNodes(const WayRestrictionMap &way_re
                 edge_data.name_id,
                 edge_data.travel_mode,
                 edge_data.classes);
+            */
 
             m_edge_based_node_weights.push_back(m_edge_based_node_weights[eid]);
 
@@ -429,6 +428,7 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
     // linear number of turns only.
     SuffixTable street_name_suffix_table(scripting_environment);
     guidance::TurnAnalysis turn_analysis(*m_node_based_graph,
+                                         m_edge_based_node_container,
                                          m_coordinates,
                                          node_restriction_map,
                                          m_barrier_nodes,
@@ -438,8 +438,11 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
                                          profile_properties);
 
     util::guidance::LaneDataIdMap lane_data_map;
-    guidance::lanes::TurnLaneHandler turn_lane_handler(
-        *m_node_based_graph, lane_description_map, turn_analysis, lane_data_map);
+    guidance::lanes::TurnLaneHandler turn_lane_handler(*m_node_based_graph,
+                                                       m_edge_based_node_container,
+                                                       lane_description_map,
+                                                       turn_analysis,
+                                                       lane_data_map);
 
     bearing_class_by_node_based_node.resize(m_node_based_graph->GetNumberOfNodes(),
                                             std::numeric_limits<std::uint32_t>::max());
@@ -562,8 +565,10 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
                                  conditions}}};
             }
 
-            const EdgeData &edge_data1 = m_node_based_graph->GetEdgeData(node_based_edge_from);
-            const EdgeData &edge_data2 = m_node_based_graph->GetEdgeData(node_based_edge_to);
+            const auto &edge_data1 = m_node_based_graph->GetEdgeData(node_based_edge_from);
+            const auto &edge_data2 = m_node_based_graph->GetEdgeData(node_based_edge_to);
+            const auto &shared_edge_data1 = m_edge_based_node_container[edge_data1.shared_data_id];
+            const auto &shared_edge_data2 = m_edge_based_node_container[edge_data2.shared_data_id];
 
             BOOST_ASSERT(edge_data1.edge_id != edge_data2.edge_id);
             BOOST_ASSERT(!edge_data1.reversed);
@@ -579,8 +584,8 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
             // compute weight and duration penalties
             auto is_traffic_light = m_traffic_lights.count(node_at_center_of_intersection);
             ExtractionTurn extracted_turn(turn, is_traffic_light);
-            extracted_turn.source_restricted = edge_data1.restricted;
-            extracted_turn.target_restricted = edge_data2.restricted;
+            extracted_turn.source_restricted = shared_edge_data1.restricted;
+            extracted_turn.target_restricted = shared_edge_data2.restricted;
             scripting_environment.ProcessTurn(extracted_turn);
 
             // turn penalties are limited to [-2^15, 2^15) which roughly

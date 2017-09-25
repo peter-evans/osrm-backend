@@ -72,6 +72,7 @@ class EdgeBasedGraphFactory
     EdgeBasedGraphFactory &operator=(const EdgeBasedGraphFactory &) = delete;
 
     explicit EdgeBasedGraphFactory(std::shared_ptr<util::NodeBasedDynamicGraph> node_based_graph,
+                                   EdgeBasedNodeDataContainer const &node_data_container,
                                    CompressedEdgeContainer &compressed_edge_container,
                                    const std::unordered_set<NodeID> &barrier_nodes,
                                    const std::unordered_set<NodeID> &traffic_lights,
@@ -95,7 +96,6 @@ class EdgeBasedGraphFactory
 
     // The following get access functions destroy the content in the factory
     void GetEdgeBasedEdges(util::DeallocatingVector<EdgeBasedEdge> &edges);
-    void GetEdgeBasedNodes(EdgeBasedNodeDataContainer &data_container);
     void GetEdgeBasedNodeSegments(std::vector<EdgeBasedNodeSegment> &nodes);
     void GetStartPointMarkers(std::vector<bool> &node_is_startpoint);
     void GetEdgeBasedNodeWeights(std::vector<EdgeWeight> &output_node_weights);
@@ -144,7 +144,7 @@ class EdgeBasedGraphFactory
 
     //! list of edge based nodes (compressed segments)
     std::vector<EdgeBasedNodeSegment> m_edge_based_node_segments;
-    EdgeBasedNodeDataContainer m_edge_based_node_container;
+    EdgeBasedNodeDataContainer const &m_edge_based_node_container;
     util::DeallocatingVector<EdgeBasedEdge> m_edge_based_edge_list;
 
     // The number of edge-based nodes is mostly made up out of the edges in the node-based graph.

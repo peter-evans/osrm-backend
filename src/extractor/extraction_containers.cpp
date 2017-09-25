@@ -67,23 +67,26 @@ struct CmpEdgeByInternalSourceTargetAndName
         if (lhs.result.target == SPECIAL_NODEID)
             return false;
 
-        if (lhs.result.name_id == rhs.result.name_id)
+        auto const lhs_name_id = edge_shared_data[lhs.result.shared_data_id].name_id;
+        auto const rhs_name_id = edge_shared_data[rhs.result.shared_data_id].name_id;
+        if (lhs_name_id == rhs_name_id)
             return false;
 
-        if (lhs.result.name_id == EMPTY_NAMEID)
+        if (lhs_name_id == EMPTY_NAMEID)
             return false;
 
-        if (rhs.result.name_id == EMPTY_NAMEID)
+        if (rhs_name_id == EMPTY_NAMEID)
             return true;
 
         BOOST_ASSERT(!name_offsets.empty() && name_offsets.back() == name_data.size());
         const oe::ExtractionContainers::NameCharData::const_iterator data = name_data.begin();
-        return std::lexicographical_compare(data + name_offsets[lhs.result.name_id],
-                                            data + name_offsets[lhs.result.name_id + 1],
-                                            data + name_offsets[rhs.result.name_id],
-                                            data + name_offsets[rhs.result.name_id + 1]);
+        return std::lexicographical_compare(data + name_offsets[lhs_name_id],
+                                            data + name_offsets[lhs_name_id + 1],
+                                            data + name_offsets[rhs_name_id],
+                                            data + name_offsets[rhs_name_id + 1]);
     }
 
+    const oe::ExtractionContainers::EdgeSharedDataVector &edge_shared_data;
     const oe::ExtractionContainers::NameCharData &name_data;
     const oe::ExtractionContainers::NameOffsets &name_offsets;
 };
@@ -415,7 +418,7 @@ void ExtractionContainers::PrepareEdges(ScriptingEnvironment &scripting_environm
         std::mutex name_data_mutex;
         tbb::parallel_sort(all_edges_list.begin(),
                            all_edges_list.end(),
-                           CmpEdgeByInternalSourceTargetAndName{name_char_data, name_offsets});
+                           CmpEdgeByInternalSourceTargetAndName{all_edges_shared_data_list, name_char_data, name_offsets});
         TIMER_STOP(sort_edges_by_renumbered_start);
         log << "ok, after " << TIMER_SEC(sort_edges_by_renumbered_start) << "s";
     }

@@ -41,6 +41,7 @@ class TurnAnalysis
 {
   public:
     TurnAnalysis(const util::NodeBasedDynamicGraph &node_based_graph,
+                 const EdgeBasedNodeDataContainer &node_data_container,
                  const std::vector<util::Coordinate> &coordinates,
                  const RestrictionMap &restriction_map,
                  const std::unordered_set<NodeID> &barrier_nodes,
@@ -81,6 +82,7 @@ class TurnAnalysis
 
   private:
     const util::NodeBasedDynamicGraph &node_based_graph;
+    const EdgeBasedNodeDataContainer &node_data_container;
     const IntersectionGenerator intersection_generator;
     const IntersectionNormalizer intersection_normalizer;
     const RoundaboutHandler roundabout_handler;

@@ -22,6 +22,7 @@ class CoordinateExtractor
 {
   public:
     CoordinateExtractor(const util::NodeBasedDynamicGraph &node_based_graph,
+                        const EdgeBasedNodeDataContainer &node_data_container,
                         const extractor::CompressedEdgeContainer &compressed_geometries,
                         const std::vector<util::Coordinate> &node_coordinates);
 
@@ -163,6 +164,7 @@ class CoordinateExtractor
 
   private:
     const util::NodeBasedDynamicGraph &node_based_graph;
+    const EdgeBasedNodeDataContainer &node_data_container;
     const extractor::CompressedEdgeContainer &compressed_geometries;
     const std::vector<util::Coordinate> &node_coordinates;
 
@@ -225,7 +227,7 @@ class CoordinateExtractor
                  const std::vector<double> &segment_distances,
                  const double segment_length,
                  const double considered_lane_width,
-                 const util::NodeBasedEdgeData &edge_data) const;
+                 const extractor::NodeBasedEdgeSharedData &edge_data) const;
 
     /*
      * If the very first coordinate is within lane offsets and the rest offers a near straight line,

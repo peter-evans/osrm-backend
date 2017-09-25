@@ -581,8 +581,12 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     std::unordered_set<NodeID> barrier_nodes;
     std::unordered_set<NodeID> traffic_signals;
 
-    auto node_based_graph =
+    const auto node_based_graph_and_data =
         LoadNodeBasedGraph(barrier_nodes, traffic_signals, coordinates, osm_node_ids);
+
+    auto node_based_graph = node_based_graph_and_data; //.first;
+    // const auto node_based_graph_data = node_based_graph_data.second;
+    EdgeBasedNodeDataContainer node_based_graph_data;
 
     CompressedEdgeContainer compressed_edge_container;
     GraphCompressor graph_compressor;
@@ -592,6 +596,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
                               turn_restrictions,
                               conditional_turn_restrictions,
                               *node_based_graph,
+                              node_based_graph_data,
                               compressed_edge_container);
 
     conditional_turn_restrictions =
@@ -600,6 +605,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     util::NameTable name_table(config.GetPath(".osrm.names").string());
 
     EdgeBasedGraphFactory edge_based_graph_factory(node_based_graph,
+                                                   node_based_graph_data,
                                                    compressed_edge_container,
                                                    barrier_nodes,
                                                    traffic_signals,
@@ -679,7 +685,6 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
                             *compressed_edge_container.ToSegmentData());
 
     edge_based_graph_factory.GetEdgeBasedEdges(edge_based_edge_list);
-    edge_based_graph_factory.GetEdgeBasedNodes(edge_based_nodes_container);
     edge_based_graph_factory.GetEdgeBasedNodeSegments(edge_based_node_segments);
     edge_based_graph_factory.GetStartPointMarkers(node_is_startpoint);
     edge_based_graph_factory.GetEdgeBasedNodeWeights(edge_based_node_weights);
@@ -696,6 +701,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     TIMER_STOP(write_intersections);
     util::Log() << "ok, after " << TIMER_SEC(write_intersections) << "s";
 
+    std::swap(edge_based_nodes_container,node_based_graph_data);
     return std::make_pair(number_of_node_based_nodes, number_of_edge_based_nodes);
 }
 

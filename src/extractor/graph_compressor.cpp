@@ -27,6 +27,7 @@ void GraphCompressor::Compress(
     std::vector<TurnRestriction> &turn_restrictions,
     std::vector<ConditionalTurnRestriction> &conditional_turn_restrictions,
     util::NodeBasedDynamicGraph &graph,
+    const EdgeBasedNodeDataContainer &node_data_container,
     CompressedEdgeContainer &geometry_compressor)
 {
     const unsigned original_number_of_nodes = graph.GetNumberOfNodes();
@@ -127,6 +128,10 @@ void GraphCompressor::Compress(
 
             const EdgeData &fwd_edge_data1 = graph.GetEdgeData(forward_e1);
             const EdgeData &rev_edge_data1 = graph.GetEdgeData(reverse_e1);
+            const auto fwd_shared_data1 = node_data_container[fwd_edge_data1.shared_data_id];
+            const auto fwd_shared_data2 = node_data_container[fwd_edge_data2.shared_data_id];
+            const auto rev_shared_data1 = node_data_container[rev_edge_data1.shared_data_id];
+            const auto rev_shared_data2 = node_data_container[rev_edge_data2.shared_data_id];
 
             if (graph.FindEdgeInEitherDirection(node_u, node_w) != SPECIAL_EDGEID)
             {
@@ -134,14 +139,16 @@ void GraphCompressor::Compress(
             }
 
             // this case can happen if two ways with different names overlap
-            if (fwd_edge_data1.name_id != rev_edge_data1.name_id ||
-                fwd_edge_data2.name_id != rev_edge_data2.name_id)
+            if (fwd_shared_data1.name_id != rev_shared_data1.name_id ||
+                fwd_shared_data2.name_id != rev_shared_data2.name_id)
             {
                 continue;
             }
 
             if (fwd_edge_data1.CanCombineWith(fwd_edge_data2) &&
-                rev_edge_data1.CanCombineWith(rev_edge_data2))
+                rev_edge_data1.CanCombineWith(rev_edge_data2) &&
+                fwd_shared_data1.CanCombineWith(fwd_shared_data2) &&
+                rev_shared_data1.CanCombineWith(rev_shared_data2))
             {
                 BOOST_ASSERT(graph.GetEdgeData(forward_e1).name_id ==
                              graph.GetEdgeData(reverse_e1).name_id);
@@ -179,20 +186,23 @@ void GraphCompressor::Compress(
                                              const LaneDescriptionID back) {
                     // A lane has tags: u - (front) - v - (back) - w
                     // During contraction, we keep only one of the tags. Usually the one closer to
-                    // the
-                    // intersection is preferred. If its empty, however, we keep the non-empty one
+                    // the intersection is preferred. If its empty, however, we keep the non-empty one
                     if (back == INVALID_LANE_DESCRIPTIONID)
                         return front;
                     return back;
                 };
+
+                // TODO set the correct shared lane data id
+                /*
                 graph.GetEdgeData(forward_e1).lane_description_id = selectLaneID(
-                    fwd_edge_data1.lane_description_id, fwd_edge_data2.lane_description_id);
+                    fwd_shared_data1.lane_description_id, fwd_shared_data2.lane_description_id);
                 graph.GetEdgeData(reverse_e1).lane_description_id = selectLaneID(
-                    rev_edge_data1.lane_description_id, rev_edge_data2.lane_description_id);
+                    rev_shared_data1.lane_description_id, rev_shared_data2.lane_description_id);
                 graph.GetEdgeData(forward_e2).lane_description_id = selectLaneID(
-                    fwd_edge_data2.lane_description_id, fwd_edge_data1.lane_description_id);
+                    fwd_shared_data2.lane_description_id, fwd_shared_data1.lane_description_id);
                 graph.GetEdgeData(reverse_e2).lane_description_id = selectLaneID(
-                    rev_edge_data2.lane_description_id, rev_edge_data1.lane_description_id);
+                    rev_shared_data2.lane_description_id, rev_shared_data1.lane_description_id);
+                */
 
                 /*
                 // Do not compress edge if it crosses a traffic signal.
@@ -208,8 +218,8 @@ void GraphCompressor::Compress(
                     // generate an artifical turn for the turn penalty generation
                     ExtractionTurn extraction_turn(true);
 
-                    extraction_turn.source_restricted = fwd_edge_data1.restricted;
-                    extraction_turn.target_restricted = fwd_edge_data2.restricted;
+                    extraction_turn.source_restricted = fwd_shared_data1.restricted;
+                    extraction_turn.target_restricted = fwd_shared_data2.restricted;
 
                     // we cannot handle this as node penalty, if it depends on turn direction
                     if (extraction_turn.source_restricted != extraction_turn.target_restricted)

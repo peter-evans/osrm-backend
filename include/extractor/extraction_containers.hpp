@@ -34,6 +34,7 @@ class ExtractionContainers
     using NodeIDVector = std::vector<OSMNodeID>;
     using NodeVector = std::vector<QueryNode>;
     using EdgeVector = std::vector<InternalExtractorEdge>;
+    using EdgeSharedDataVector = std::vector<NodeBasedEdgeSharedData>;
     using WayIDStartEndVector = std::vector<FirstAndLastSegmentOfWay>;
     using NameCharData = std::vector<unsigned char>;
     using NameOffsets = std::vector<unsigned>;
@@ -43,6 +44,7 @@ class ExtractionContainers
     NodeIDVector used_node_id_list;
     NodeVector all_nodes_list;
     EdgeVector all_edges_list;
+    EdgeSharedDataVector all_edges_shared_data_list;
     NameCharData name_char_data;
     NameOffsets name_offsets;
     // an adjacency array containing all turn lane masks

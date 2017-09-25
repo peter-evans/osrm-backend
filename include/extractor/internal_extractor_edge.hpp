@@ -61,57 +61,26 @@ struct InternalExtractorEdge
     explicit InternalExtractorEdge()
         : result(MIN_OSM_NODEID,
                  MIN_OSM_NODEID,
-                 SPECIAL_NODEID,
                  0,
                  0,
                  false, // forward
                  false, // backward
-                 false, // roundabout
-                 false, // circular
-                 true,  // can be startpoint
-                 false, // local access only
-                 false, // split edge
-                 TRAVEL_MODE_INACCESSIBLE,
-                 0,
-                 guidance::TurnLaneType::empty,
-                 guidance::RoadClassification()),
+                 false, // split edge,
+                 -1),
           weight_data(), duration_data()
     {
     }
 
     explicit InternalExtractorEdge(OSMNodeID source,
                                    OSMNodeID target,
-                                   NodeID name_id,
                                    WeightData weight_data,
                                    DurationData duration_data,
                                    bool forward,
                                    bool backward,
-                                   bool roundabout,
-                                   bool circular,
-                                   bool startpoint,
-                                   bool restricted,
                                    bool is_split,
-                                   TravelMode travel_mode,
-                                   ClassData classes,
-                                   LaneDescriptionID lane_description,
-                                   guidance::RoadClassification road_classification,
+                                   std::size_t shared_data_id,
                                    util::Coordinate source_coordinate)
-        : result(source,
-                 target,
-                 name_id,
-                 0,
-                 0,
-                 forward,
-                 backward,
-                 roundabout,
-                 circular,
-                 startpoint,
-                 restricted,
-                 is_split,
-                 travel_mode,
-                 classes,
-                 lane_description,
-                 std::move(road_classification)),
+        : result(source, target, 0, 0, forward, backward, is_split, shared_data_id),
           weight_data(std::move(weight_data)), duration_data(std::move(duration_data)),
           source_coordinate(std::move(source_coordinate))
     {
@@ -131,40 +100,24 @@ struct InternalExtractorEdge
     {
         return InternalExtractorEdge(MIN_OSM_NODEID,
                                      MIN_OSM_NODEID,
-                                     SPECIAL_NODEID,
                                      WeightData(),
                                      DurationData(),
                                      false, // forward
                                      false, // backward
-                                     false, // roundabout
-                                     false, // circular
-                                     true,  // can be startpoint
-                                     false, // local access only
                                      false, // split edge
-                                     TRAVEL_MODE_INACCESSIBLE,
-                                     0,
-                                     INVALID_LANE_DESCRIPTIONID,
-                                     guidance::RoadClassification(),
+                                     -1,
                                      util::Coordinate());
     }
     static InternalExtractorEdge max_osm_value()
     {
         return InternalExtractorEdge(MAX_OSM_NODEID,
                                      MAX_OSM_NODEID,
-                                     SPECIAL_NODEID,
                                      WeightData(),
                                      DurationData(),
                                      false, // forward
                                      false, // backward
-                                     false, // roundabout
-                                     false, // circular
-                                     true,  // can be startpoint
-                                     false, // local access only
                                      false, // split edge
-                                     TRAVEL_MODE_INACCESSIBLE,
-                                     0,
-                                     INVALID_LANE_DESCRIPTIONID,
-                                     guidance::RoadClassification(),
+                                     -1,
                                      util::Coordinate());
     }
 

@@ -24,6 +24,7 @@ namespace guidance
 {
 
 RoundaboutHandler::RoundaboutHandler(const util::NodeBasedDynamicGraph &node_based_graph,
+                                     const EdgeBasedNodeDataContainer &node_data_container,
                                      const std::vector<util::Coordinate> &coordinates,
                                      const CompressedEdgeContainer &compressed_edge_container,
                                      const util::NameTable &name_table,
@@ -31,12 +32,14 @@ RoundaboutHandler::RoundaboutHandler(const util::NodeBasedDynamicGraph &node_bas
                                      const ProfileProperties &profile_properties,
                                      const IntersectionGenerator &intersection_generator)
     : IntersectionHandler(node_based_graph,
+                          node_data_container,
                           coordinates,
                           name_table,
                           street_name_suffix_table,
                           intersection_generator),
       compressed_edge_container(compressed_edge_container), profile_properties(profile_properties),
-      coordinate_extractor(node_based_graph, compressed_edge_container, coordinates)
+      coordinate_extractor(
+          node_based_graph, node_data_container, compressed_edge_container, coordinates)
 {
 }
 
@@ -69,7 +72,7 @@ operator()(const NodeID from_nid, const EdgeID via_eid, Intersection intersectio
 detail::RoundaboutFlags RoundaboutHandler::getRoundaboutFlags(
     const NodeID from_nid, const EdgeID via_eid, const Intersection &intersection) const
 {
-    const auto &in_edge_data = node_based_graph.GetEdgeData(via_eid);
+    const auto &in_edge_data = node_data_container[node_based_graph.GetEdgeData(via_eid).shared_data_id];
     bool on_roundabout = in_edge_data.roundabout || in_edge_data.circular;
     bool can_enter_roundabout = false;
     bool can_exit_roundabout_separately = false;
@@ -80,11 +83,12 @@ detail::RoundaboutFlags RoundaboutHandler::getRoundaboutFlags(
          ++cnt, idx += step)
     {
         const auto &road = intersection[idx];
-        const auto &edge_data = node_based_graph.GetEdgeData(road.eid);
+        const auto &edge = node_based_graph.GetEdgeData(road.eid);
         // only check actual outgoing edges
-        if (edge_data.reversed || !road.entry_allowed)
+        if (edge.reversed || !road.entry_allowed)
             continue;
 
+        const auto &edge_data = node_data_container[edge.shared_data_id];
         if (edge_data.roundabout || edge_data.circular)
         {
             can_enter_roundabout = true;
@@ -108,7 +112,7 @@ void RoundaboutHandler::invalidateExitAgainstDirection(const NodeID from_nid,
                                                        const EdgeID via_eid,
                                                        Intersection &intersection) const
 {
-    const auto &in_edge_data = node_based_graph.GetEdgeData(via_eid);
+    const auto &in_edge_data = node_data_container[node_based_graph.GetEdgeData(via_eid).shared_data_id];
     if (in_edge_data.roundabout || in_edge_data.circular)
         return;
 
@@ -136,10 +140,11 @@ void RoundaboutHandler::invalidateExitAgainstDirection(const NodeID from_nid,
     auto invalidate_from = intersection.end(), invalidate_to = intersection.end();
     for (auto road = intersection.begin(); road != intersection.end(); ++road)
     {
-        const auto &edge_data = node_based_graph.GetEdgeData(road->eid);
+        const auto &edge = node_based_graph.GetEdgeData(road->eid);
+        const auto &edge_data = node_data_container[edge.shared_data_id];
         if (edge_data.roundabout || edge_data.circular)
         {
-            if (edge_data.reversed)
+            if (edge.reversed)
             {
                 if (roundabout_entry_first)
                 { // invalidate turns in range exit..end
@@ -166,7 +171,7 @@ void RoundaboutHandler::invalidateExitAgainstDirection(const NodeID from_nid,
     // u-turn against the roundabout direction is invalidated.
     for (; invalidate_from != invalidate_to; ++invalidate_from)
     {
-        const auto &edge_data = node_based_graph.GetEdgeData(invalidate_from->eid);
+        const auto &edge_data = node_data_container[node_based_graph.GetEdgeData(invalidate_from->eid).shared_data_id];
         if (!edge_data.roundabout && !edge_data.circular &&
             node_based_graph.GetTarget(invalidate_from->eid) != from_nid)
         {
@@ -207,7 +212,7 @@ bool RoundaboutHandler::qualifiesAsRoundaboutIntersection(
             // can only contain a single further road
             for (const auto edge : node_based_graph.GetAdjacentEdgeRange(node))
             {
-                const auto edge_data = node_based_graph.GetEdgeData(edge);
+                const auto edge_data = node_data_container[node_based_graph.GetEdgeData(edge).shared_data_id];
                 if (edge_data.roundabout || edge_data.circular)
                     continue;
 
@@ -221,7 +226,7 @@ bool RoundaboutHandler::qualifiesAsRoundaboutIntersection(
                     std::uint8_t{0},
                     [this](const auto current_max, const auto current_eid) {
                         return std::max(current_max,
-                                        node_based_graph.GetEdgeData(current_eid)
+                                        node_data_container[node_based_graph.GetEdgeData(current_eid).shared_data_id]
                                             .road_classification.GetNumberOfLanes());
                     });
 
@@ -279,10 +284,11 @@ RoundaboutType RoundaboutHandler::getRoundaboutType(const NodeID nid) const
         const NodeID node, const bool roundabout, const bool circular) {
         BOOST_ASSERT(roundabout != circular);
         EdgeID continue_edge = SPECIAL_EDGEID;
-        for (const auto edge : node_based_graph.GetAdjacentEdgeRange(node))
+        for (const auto edge_id : node_based_graph.GetAdjacentEdgeRange(node))
         {
-            const auto &edge_data = node_based_graph.GetEdgeData(edge);
-            if (!edge_data.reversed && (edge_data.circular == circular) &&
+            const auto &edge = node_based_graph.GetEdgeData(edge_id);
+            const auto &edge_data = node_data_container[edge.shared_data_id];
+            if (!edge.reversed && (edge_data.circular == circular) &&
                 (edge_data.roundabout == roundabout))
             {
                 if (SPECIAL_EDGEID != continue_edge)
@@ -303,7 +309,7 @@ RoundaboutType RoundaboutHandler::getRoundaboutType(const NodeID nid) const
                         roundabout_name_ids.insert(edge_data.name_id);
                 }
 
-                continue_edge = edge;
+                continue_edge = edge_id;
             }
             else if (!edge_data.roundabout && !edge_data.circular)
             {
@@ -321,7 +327,7 @@ RoundaboutType RoundaboutHandler::getRoundaboutType(const NodeID nid) const
         std::size_t count = 0;
         for (const auto edge : node_based_graph.GetAdjacentEdgeRange(at_node))
         {
-            const auto &edge_data = node_based_graph.GetEdgeData(edge);
+            const auto &edge_data = node_data_container[node_based_graph.GetEdgeData(edge).shared_data_id];
             if (edge_data.roundabout || edge_data.circular)
                 count++;
         }
@@ -353,7 +359,7 @@ RoundaboutType RoundaboutHandler::getRoundaboutType(const NodeID nid) const
     bool roundabout = false, circular = false;
     for (const auto eid : node_based_graph.GetAdjacentEdgeRange(nid))
     {
-        const auto data = node_based_graph.GetEdgeData(eid);
+        const auto data = node_data_container[node_based_graph.GetEdgeData(eid).shared_data_id];
         roundabout |= data.roundabout;
         circular |= data.circular;
     }
@@ -447,7 +453,7 @@ Intersection RoundaboutHandler::handleRoundabouts(const RoundaboutType roundabou
         {
             auto &road = intersection[idx];
             auto &turn = road;
-            const auto &out_data = node_based_graph.GetEdgeData(road.eid);
+            const auto &out_data = node_data_container[node_based_graph.GetEdgeData(road.eid).shared_data_id];
             if (out_data.roundabout || out_data.circular)
             {
                 // TODO can forks happen in roundabouts? E.g. required lane changes
@@ -470,8 +476,9 @@ Intersection RoundaboutHandler::handleRoundabouts(const RoundaboutType roundabou
                         for (const auto eid :
                              node_based_graph.GetAdjacentEdgeRange(node_at_center_of_intersection))
                         {
-                            const auto &data_of_leaving_edge = node_based_graph.GetEdgeData(eid);
-                            if (!data_of_leaving_edge.reversed &&
+                            const auto &leaving_edge = node_based_graph.GetEdgeData(eid);
+                            const auto &data_of_leaving_edge = node_data_container[leaving_edge.shared_data_id];
+                            if (!leaving_edge.reversed &&
                                 !data_of_leaving_edge.roundabout &&
                                 !data_of_leaving_edge.circular &&
                                 !data_of_leaving_edge.road_classification.IsLowPriorityRoadClass())
@@ -510,7 +517,7 @@ Intersection RoundaboutHandler::handleRoundabouts(const RoundaboutType roundabou
              ++cnt, idx += step)
         {
             auto &turn = intersection[idx];
-            const auto &out_data = node_based_graph.GetEdgeData(turn.eid);
+            const auto &out_data = node_data_container[node_based_graph.GetEdgeData(turn.eid).shared_data_id];
 
             // A roundabout consists of exactly two roads at an intersection. by toggeling this
             // flag, we can switch between roads crossing the roundabout and roads that are on the

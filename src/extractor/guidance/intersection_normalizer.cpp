@@ -15,12 +15,14 @@ namespace guidance
 {
 
 IntersectionNormalizer::IntersectionNormalizer(const util::NodeBasedDynamicGraph &node_based_graph,
+                                               const EdgeBasedNodeDataContainer &node_data_container,
                                                const std::vector<util::Coordinate> &coordinates,
                                                const util::NameTable &name_table,
                                                const SuffixTable &street_name_suffix_table,
                                                const IntersectionGenerator &intersection_generator)
     : node_based_graph(node_based_graph), intersection_generator(intersection_generator),
       mergable_road_detector(node_based_graph,
+                             node_data_container,
                              coordinates,
                              intersection_generator,
                              intersection_generator.GetCoordinateExtractor(),
