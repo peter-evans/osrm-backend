@@ -43,35 +43,26 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     EdgeBasedNodeDataContainerImpl() = default;
 
     EdgeBasedNodeDataContainerImpl(std::size_t size)
-        : geometry_ids(size), name_ids(size), component_ids(size), travel_modes(size), classes(size)
+        : data(size)
     {
     }
 
     EdgeBasedNodeDataContainerImpl(Vector<NodeBasedEdgeSharedData> data)
-    : data(std::move(data))
-    {}
-
-    EdgeBasedNodeDataContainerImpl(Vector<GeometryID> geometry_ids,
-                                   Vector<NameID> name_ids,
-                                   Vector<ComponentID> component_ids,
-                                   Vector<TravelMode> travel_modes,
-                                   Vector<ClassData> classes)
-        : geometry_ids(std::move(geometry_ids)), name_ids(std::move(name_ids)),
-          component_ids(std::move(component_ids)), travel_modes(std::move(travel_modes)),
-          classes(std::move(classes))
+        : data(std::move(data))
     {
     }
 
-    GeometryID GetGeometryID(const NodeID node_id) const { return geometry_ids[node_id]; }
+    GeometryID GetGeometryID(const NodeID node_id) const { return data[node_id].geometry_id; }
 
-    TravelMode GetTravelMode(const NodeID node_id) const { return travel_modes[node_id]; }
+    TravelMode GetTravelMode(const NodeID node_id) const { return data[node_id].travel_mode; }
 
-    NameID GetNameID(const NodeID node_id) const { return name_ids[node_id]; }
+    NameID GetNameID(const NodeID node_id) const { return data[node_id].name_id; }
 
-    ComponentID GetComponentID(const NodeID node_id) const { return component_ids[node_id]; }
+    ComponentID GetComponentID(const NodeID node_id) const { return {0,false}; } //component_ids[node_id]; }
 
-    ClassData GetClassData(const NodeID node_id) const { return classes[node_id]; }
+    ClassData GetClassData(const NodeID node_id) const { return data[node_id].classes; }
 
+    /*
     // Used by EdgeBasedGraphFactory to fill data structure
     template <typename = std::enable_if<Ownership == storage::Ownership::Container>>
     void SetData(NodeID node_id,
@@ -92,6 +83,7 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     {
         component_ids[node_id] = component_id;
     }
+    */
 
     friend void serialization::read<Ownership>(storage::io::FileReader &reader,
                                                EdgeBasedNodeDataContainerImpl &ebn_data_container);
@@ -102,21 +94,22 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     template <typename = std::enable_if<Ownership == storage::Ownership::Container>>
     void Renumber(const std::vector<std::uint32_t> &permutation)
     {
-        util::inplacePermutation(geometry_ids.begin(), geometry_ids.end(), permutation);
-        util::inplacePermutation(name_ids.begin(), name_ids.end(), permutation);
-        util::inplacePermutation(component_ids.begin(), component_ids.end(), permutation);
-        util::inplacePermutation(travel_modes.begin(), travel_modes.end(), permutation);
-        util::inplacePermutation(classes.begin(), classes.end(), permutation);
+        //util::inplacePermutation(geometry_ids.begin(), geometry_ids.end(), permutation);
+        //util::inplacePermutation(name_ids.begin(), name_ids.end(), permutation);
+        //util::inplacePermutation(component_ids.begin(), component_ids.end(), permutation);
+        //util::inplacePermutation(travel_modes.begin(), travel_modes.end(), permutation);
+        //util::inplacePermutation(classes.begin(), classes.end(), permutation);
+        //util::inplacePermutation(data.begin(), data.end(), permutation);
     }
 
     // all containers have the exact same size
     std::size_t Size() const
     {
-        BOOST_ASSERT(geometry_ids.size() == name_ids.size());
-        BOOST_ASSERT(geometry_ids.size() == component_ids.size());
-        BOOST_ASSERT(geometry_ids.size() == travel_modes.size());
-        BOOST_ASSERT(geometry_ids.size() == classes.size());
-        return geometry_ids.size();
+        //BOOST_ASSERT(geometry_ids.size() == name_ids.size());
+        //BOOST_ASSERT(geometry_ids.size() == component_ids.size());
+        //BOOST_ASSERT(geometry_ids.size() == travel_modes.size());
+        //BOOST_ASSERT(geometry_ids.size() == classes.size());
+        return data.size();
     }
 
     // access the shared data of a set of nodes
@@ -125,11 +118,11 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     }
 
   private:
-    Vector<GeometryID> geometry_ids;
-    Vector<NameID> name_ids;
-    Vector<ComponentID> component_ids;
-    Vector<TravelMode> travel_modes;
-    Vector<ClassData> classes;
+    //Vector<GeometryID> geometry_ids;
+    //Vector<NameID> name_ids;
+    //Vector<ComponentID> component_ids;
+    //Vector<TravelMode> travel_modes;
+    //Vector<ClassData> classes;
     Vector<NodeBasedEdgeSharedData> data;
 };
 }

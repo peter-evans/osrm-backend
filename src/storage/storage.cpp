@@ -253,12 +253,7 @@ void Storage::PopulateLayout(DataLayout &layout)
         io::FileReader nodes_data_file(config.GetPath(".osrm.ebg_nodes"),
                                        io::FileReader::VerifyFingerprint);
         const auto nodes_number = nodes_data_file.ReadElementCount64();
-
-        layout.SetBlockSize<NodeID>(DataLayout::GEOMETRY_ID_LIST, nodes_number);
-        layout.SetBlockSize<NameID>(DataLayout::NAME_ID_LIST, nodes_number);
-        layout.SetBlockSize<ComponentID>(DataLayout::COMPONENT_ID_LIST, nodes_number);
-        layout.SetBlockSize<extractor::TravelMode>(DataLayout::TRAVEL_MODE_LIST, nodes_number);
-        layout.SetBlockSize<extractor::ClassData>(DataLayout::CLASSES_LIST, nodes_number);
+        layout.SetBlockSize<extractor::NodeBasedEdgeSharedData>(DataLayout::ANNOTATION_DATA_LIST, nodes_number);
     }
 
     if (boost::filesystem::exists(config.GetPath(".osrm.hsgr")))
@@ -708,6 +703,7 @@ void Storage::PopulateData(const DataLayout &layout, char *memory_ptr)
 
     // Load edge-based nodes data
     {
+        /*
         auto geometry_id_list_ptr =
             layout.GetBlockPtr<GeometryID, true>(memory_ptr, storage::DataLayout::GEOMETRY_ID_LIST);
         util::vector_view<GeometryID> geometry_ids(
@@ -732,12 +728,14 @@ void Storage::PopulateData(const DataLayout &layout, char *memory_ptr)
             memory_ptr, storage::DataLayout::CLASSES_LIST);
         util::vector_view<extractor::ClassData> classes(
             classes_list_ptr, layout.num_entries[storage::DataLayout::CLASSES_LIST]);
+        */
 
-        extractor::EdgeBasedNodeDataView node_data(std::move(geometry_ids),
-                                                   std::move(name_ids),
-                                                   std::move(component_ids),
-                                                   std::move(travel_modes),
-                                                   std::move(classes));
+        auto annotation_data_list_ptr = layout.GetBlockPtr<extractor::NodeBasedEdgeSharedData, true>(
+            memory_ptr, storage::DataLayout::ANNOTATION_DATA_LIST);
+        util::vector_view<extractor::NodeBasedEdgeSharedData> annotation_data(
+            annotation_data_list_ptr, layout.num_entries[storage::DataLayout::ANNOTATION_DATA_LIST]);
+
+        extractor::EdgeBasedNodeDataView node_data(std::move(annotation_data));
 
         extractor::files::readNodeData(config.GetPath(".osrm.ebg_nodes"), node_data);
     }

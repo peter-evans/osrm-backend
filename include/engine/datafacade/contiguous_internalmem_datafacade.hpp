@@ -337,6 +337,7 @@ class ContiguousInternalMemoryDataFacadeBase : public BaseDataFacade
     void InitializeEdgeBasedNodeDataInformationPointers(storage::DataLayout &layout,
                                                         char *memory_ptr)
     {
+        /*
         const auto via_geometry_list_ptr =
             layout.GetBlockPtr<GeometryID>(memory_ptr, storage::DataLayout::GEOMETRY_ID_LIST);
         util::vector_view<GeometryID> geometry_ids(
@@ -361,12 +362,13 @@ class ContiguousInternalMemoryDataFacadeBase : public BaseDataFacade
             layout.GetBlockPtr<extractor::ClassData>(memory_ptr, storage::DataLayout::CLASSES_LIST);
         util::vector_view<extractor::ClassData> classes(
             classes_list_ptr, layout.num_entries[storage::DataLayout::CLASSES_LIST]);
+        */
 
-        edge_based_node_data = extractor::EdgeBasedNodeDataView(std::move(geometry_ids),
-                                                                std::move(name_ids),
-                                                                std::move(component_ids),
-                                                                std::move(travel_modes),
-                                                                std::move(classes));
+        const auto annotation_data_list_ptr =
+            layout.GetBlockPtr<extractor::NodeBasedEdgeSharedData>(memory_ptr, storage::DataLayout::ANNOTATION_DATA_LIST);
+        util::vector_view<extractor::NodeBasedEdgeSharedData> annotation_data(
+            annotation_data_list_ptr, layout.num_entries[storage::DataLayout::ANNOTATION_DATA_LIST]);
+        edge_based_node_data = extractor::EdgeBasedNodeDataView(std::move(annotation_data));
     }
 
     void InitializeEdgeInformationPointers(storage::DataLayout &layout, char *memory_ptr)

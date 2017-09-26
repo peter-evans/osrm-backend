@@ -588,7 +588,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     const auto &barrier_nodes = node_based_graph_factory.GetBarriers();
     const auto &traffic_signals = node_based_graph_factory.GetTrafficSignals();
     std::swap(coordinates,node_based_graph_factory.GetCoordinates());
-    auto const& node_based_graph_data = EdgeBasedNodeDataContainer(node_based_graph_factory.GetAnnotationData());
+    const auto & node_based_graph_data = EdgeBasedNodeDataContainer(node_based_graph_factory.GetAnnotationData());
 
     conditional_turn_restrictions =
         removeInvalidRestrictions(std::move(conditional_turn_restrictions), *node_based_graph);
@@ -692,7 +692,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     TIMER_STOP(write_intersections);
     util::Log() << "ok, after " << TIMER_SEC(write_intersections) << "s";
 
-    //std::swap(edge_based_nodes_container, node_based_graph_data);
+    edge_based_nodes_container = node_based_graph_factory.GetAnnotationData();
     return std::make_pair(number_of_node_based_nodes, number_of_edge_based_nodes);
 }
 

@@ -46,7 +46,7 @@ class NodeBasedGraphFactory
     auto const &GetTrafficSignals() const { return traffic_signals; }
     auto &GetCompressedEdges() { return compressed_edge_container; }
     auto & GetCoordinates() { return coordinates; }
-    auto const& GetAnnotationData() const { return annotation_data; }
+    auto & GetAnnotationData() { return annotation_data; }
   private:
     // Get the information from the *.osrm file (direct product of the extractor callback/extraction
     // containers) and prepare the graph creation process

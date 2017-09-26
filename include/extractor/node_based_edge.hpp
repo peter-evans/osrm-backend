@@ -29,6 +29,7 @@ struct NodeBasedEdgeSharedData
     ClassData classes;                                // 8  1
     LaneDescriptionID lane_description_id;            // 16 2
     guidance::RoadClassification road_classification; // 16 2
+    GeometryID geometry_id;                           // 32 4
 
     bool CanCombineWith(const NodeBasedEdgeSharedData &other) const
     {
