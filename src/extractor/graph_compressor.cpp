@@ -139,8 +139,8 @@ void GraphCompressor::Compress(
             }
 
             // this case can happen if two ways with different names overlap
-            if (fwd_shared_data1.name_id != rev_shared_data1.name_id ||
-                fwd_shared_data2.name_id != rev_shared_data2.name_id)
+            if ((fwd_shared_data1.name_id != rev_shared_data1.name_id) ||
+                (fwd_shared_data2.name_id != rev_shared_data2.name_id))
             {
                 continue;
             }
@@ -150,11 +150,6 @@ void GraphCompressor::Compress(
                 fwd_shared_data1.CanCombineWith(fwd_shared_data2) &&
                 rev_shared_data1.CanCombineWith(rev_shared_data2))
             {
-                BOOST_ASSERT(graph.GetEdgeData(forward_e1).name_id ==
-                             graph.GetEdgeData(reverse_e1).name_id);
-                BOOST_ASSERT(graph.GetEdgeData(forward_e2).name_id ==
-                             graph.GetEdgeData(reverse_e2).name_id);
-
                 /*
                  * Remember Lane Data for compressed parts. This handles scenarios where lane-data
                  * is

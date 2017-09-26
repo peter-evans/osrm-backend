@@ -73,7 +73,7 @@ class EdgeBasedGraphFactory
 
     explicit EdgeBasedGraphFactory(std::shared_ptr<util::NodeBasedDynamicGraph> node_based_graph,
                                    EdgeBasedNodeDataContainer const &node_data_container,
-                                   CompressedEdgeContainer &compressed_edge_container,
+                                   const CompressedEdgeContainer &compressed_edge_container,
                                    const std::unordered_set<NodeID> &barrier_nodes,
                                    const std::unordered_set<NodeID> &traffic_lights,
                                    const std::vector<util::Coordinate> &coordinates,
@@ -160,7 +160,7 @@ class EdgeBasedGraphFactory
 
     const std::unordered_set<NodeID> &m_barrier_nodes;
     const std::unordered_set<NodeID> &m_traffic_lights;
-    CompressedEdgeContainer &m_compressed_edge_container;
+    const CompressedEdgeContainer &m_compressed_edge_container;
 
     ProfileProperties profile_properties;
 

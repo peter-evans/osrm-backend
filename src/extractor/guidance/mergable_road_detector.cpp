@@ -73,7 +73,7 @@ bool MergableRoadDetector::CanMergeRoad(const NodeID intersection_node,
     const auto &rhs_edge_data = node_data_container[rhs_edge.shared_data_id];
 
     // and they need to describe the same road
-    if ((lhs_edge.reversed != rhs_edge.reversed) ||
+    if ((lhs_edge.reversed == rhs_edge.reversed) ||
         !EdgeDataSupportsMerge(lhs_edge_data, rhs_edge_data))
         return false;
 

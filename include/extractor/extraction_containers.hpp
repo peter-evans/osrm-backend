@@ -28,6 +28,7 @@ class ExtractionContainers
 
     void WriteNodes(storage::io::FileWriter &file_out) const;
     void WriteEdges(storage::io::FileWriter &file_out) const;
+    void WriteMetadata(storage::io::FileWriter &file_out) const;
     void WriteCharData(const std::string &file_name);
 
   public:

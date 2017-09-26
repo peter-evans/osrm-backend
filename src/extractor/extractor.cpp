@@ -7,6 +7,7 @@
 #include "extractor/extraction_way.hpp"
 #include "extractor/extractor_callbacks.hpp"
 #include "extractor/files.hpp"
+#include "extractor/node_based_graph_factory.hpp"
 #include "extractor/raster_source.hpp"
 #include "extractor/restriction_filter.hpp"
 #include "extractor/restriction_parser.hpp"
@@ -524,7 +525,8 @@ void Extractor::FindComponents(unsigned max_edge_id,
         const auto forward_component = component_search.GetComponentID(node_id);
         const auto component_size = component_search.GetComponentSize(forward_component);
         const auto is_tiny = component_size < config.small_component_size;
-        nodes_container.SetComponentID(node_id, {1 + forward_component, is_tiny});
+        // TODO set components within data of edge-based-graph
+        //nodes_container.SetComponentID(node_id, {1 + forward_component, is_tiny});
     }
 }
 
@@ -578,26 +580,15 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     std::vector<ConditionalTurnRestriction> &conditional_turn_restrictions,
     guidance::LaneDescriptionMap &turn_lane_map)
 {
-    std::unordered_set<NodeID> barrier_nodes;
-    std::unordered_set<NodeID> traffic_signals;
+    // Create a node-based graph from the OSRM file
+    NodeBasedGraphFactory node_based_graph_factory(
+        config.GetPath(".osrm"), scripting_environment, turn_restrictions, conditional_turn_restrictions);
 
-    const auto node_based_graph_and_data =
-        LoadNodeBasedGraph(barrier_nodes, traffic_signals, coordinates, osm_node_ids);
-
-    auto node_based_graph = node_based_graph_and_data; //.first;
-    // const auto node_based_graph_data = node_based_graph_data.second;
-    EdgeBasedNodeDataContainer node_based_graph_data;
-
-    CompressedEdgeContainer compressed_edge_container;
-    GraphCompressor graph_compressor;
-    graph_compressor.Compress(barrier_nodes,
-                              traffic_signals,
-                              scripting_environment,
-                              turn_restrictions,
-                              conditional_turn_restrictions,
-                              *node_based_graph,
-                              node_based_graph_data,
-                              compressed_edge_container);
+    auto node_based_graph = node_based_graph_factory.GetGraph();
+    const auto &barrier_nodes = node_based_graph_factory.GetBarriers();
+    const auto &traffic_signals = node_based_graph_factory.GetTrafficSignals();
+    std::swap(coordinates,node_based_graph_factory.GetCoordinates());
+    auto const& node_based_graph_data = EdgeBasedNodeDataContainer(node_based_graph_factory.GetAnnotationData());
 
     conditional_turn_restrictions =
         removeInvalidRestrictions(std::move(conditional_turn_restrictions), *node_based_graph);
@@ -606,7 +597,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
 
     EdgeBasedGraphFactory edge_based_graph_factory(node_based_graph,
                                                    node_based_graph_data,
-                                                   compressed_edge_container,
+                                                   node_based_graph_factory.GetCompressedEdges(),
                                                    barrier_nodes,
                                                    traffic_signals,
                                                    coordinates,
@@ -649,7 +640,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     };
 
     const auto number_of_edge_based_nodes = create_edge_based_edges();
-    compressed_edge_container.PrintStatistics();
+    node_based_graph_factory.GetCompressedEdges().PrintStatistics();
 
     // The osrm-partition tool requires the compressed node based graph with an embedding.
     //
@@ -682,7 +673,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
             config.GetPath(".osrm.tls"), turn_lane_offsets, turn_lane_masks);
     }
     files::writeSegmentData(config.GetPath(".osrm.geometry"),
-                            *compressed_edge_container.ToSegmentData());
+                            *node_based_graph_factory.GetCompressedEdges().ToSegmentData());
 
     edge_based_graph_factory.GetEdgeBasedEdges(edge_based_edge_list);
     edge_based_graph_factory.GetEdgeBasedNodeSegments(edge_based_node_segments);
@@ -701,7 +692,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     TIMER_STOP(write_intersections);
     util::Log() << "ok, after " << TIMER_SEC(write_intersections) << "s";
 
-    std::swap(edge_based_nodes_container,node_based_graph_data);
+    //std::swap(edge_based_nodes_container, node_based_graph_data);
     return std::make_pair(number_of_node_based_nodes, number_of_edge_based_nodes);
 }
 

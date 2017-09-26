@@ -62,7 +62,7 @@ namespace extractor
 EdgeBasedGraphFactory::EdgeBasedGraphFactory(
     std::shared_ptr<util::NodeBasedDynamicGraph> node_based_graph,
     EdgeBasedNodeDataContainer const &node_data_container,
-    CompressedEdgeContainer &compressed_edge_container,
+    const CompressedEdgeContainer &compressed_edge_container,
     const std::unordered_set<NodeID> &barrier_nodes,
     const std::unordered_set<NodeID> &traffic_lights,
     const std::vector<util::Coordinate> &coordinates,
@@ -145,7 +145,7 @@ NBGToEBG EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const N
     // There should always be some geometry
     BOOST_ASSERT(0 != segment_count);
 
-    const unsigned packed_geometry_id = m_compressed_edge_container.ZipEdges(edge_id_1, edge_id_2);
+    //const unsigned packed_geometry_id = m_compressed_edge_container.ZipEdges(edge_id_1, edge_id_2);
 
     NodeID current_edge_source_coordinate_id = node_u;
 
@@ -303,7 +303,7 @@ EdgeBasedGraphFactory::GenerateEdgeExpandedNodes(const WayRestrictionMap &way_re
         util::UnbufferedLog log;
         util::Percent progress(log, m_node_based_graph->GetNumberOfNodes());
 
-        m_compressed_edge_container.InitializeBothwayVector();
+        //m_compressed_edge_container.InitializeBothwayVector();
 
         // loop over all edges and generate new set of nodes
         for (const auto nbg_node_u : util::irange(0u, m_node_based_graph->GetNumberOfNodes()))
@@ -368,7 +368,7 @@ EdgeBasedGraphFactory::GenerateEdgeExpandedNodes(const WayRestrictionMap &way_re
             // what is this ID all about? :(
             BOOST_ASSERT(edge_data.edge_id != SPECIAL_NODEID);
 
-            BOOST_ASSERT(edge_data.edge_id < m_edge_based_node_container.Size());
+            //BOOST_ASSERT(edge_data.edge_id < m_edge_based_node_container.Size());
             /*
             m_edge_based_node_container.SetData(
                 edge_based_node_id,

@@ -139,6 +139,7 @@ void ExtractionContainers::PrepareData(ScriptingEnvironment &scripting_environme
     all_nodes_list.clear(); // free all_nodes_list before allocation of normal_edges
     all_nodes_list.shrink_to_fit();
     WriteEdges(file_out);
+    WriteMetadata(file_out);
 
     PrepareRestrictions();
     WriteCharData(name_file_name);
@@ -548,8 +549,22 @@ void ExtractionContainers::WriteEdges(storage::io::FileWriter &file_out) const
 
         TIMER_STOP(write_edges);
         log << "ok, after " << TIMER_SEC(write_edges) << "s";
-        log << "Processed " << normal_edges.size() << " edges";
+        log << " -- Processed " << normal_edges.size() << " edges";
     }
+}
+
+void ExtractionContainers::WriteMetadata(storage::io::FileWriter &file_out) const
+{
+    util::UnbufferedLog log;
+    log << "Writing way meta-data     ... " << std::flush;
+    TIMER_START(write_meta_data);
+
+    file_out.WriteElementCount64(all_edges_shared_data_list.size());
+    file_out.WriteFrom(all_edges_shared_data_list.data(), all_edges_shared_data_list.size());
+
+    TIMER_STOP(write_meta_data);
+    log << "ok, after " << TIMER_SEC(write_meta_data) << "s";
+    log << " -- Metadata contains << " << all_edges_shared_data_list.size() << " entries.";
 }
 
 void ExtractionContainers::WriteNodes(storage::io::FileWriter &file_out) const

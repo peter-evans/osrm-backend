@@ -77,7 +77,7 @@ NodeID loadNodesFromFile(storage::io::FileReader &file_reader,
 /**
  * Reads a .osrm file and produces the edges.
  */
-inline NodeID loadEdgesFromFile(storage::io::FileReader &file_reader,
+inline EdgeID loadEdgesFromFile(storage::io::FileReader &file_reader,
                                 std::vector<extractor::NodeBasedEdge> &edge_list)
 {
     auto number_of_edges = file_reader.ReadElementCount64();
@@ -105,7 +105,6 @@ inline NodeID loadEdgesFromFile(storage::io::FileReader &file_reader,
 
         BOOST_ASSERT_MSG(edge.weight > 0, "loaded null weight");
         BOOST_ASSERT_MSG(edge.forward, "edge must be oriented in forward direction");
-        BOOST_ASSERT_MSG(edge.travel_mode != TRAVEL_MODE_INACCESSIBLE, "loaded non-accessible");
 
         BOOST_ASSERT_MSG(edge.source != edge.target, "loaded edges contain a loop");
         BOOST_ASSERT_MSG(edge.source != prev_edge.source || edge.target != prev_edge.target,
@@ -117,6 +116,16 @@ inline NodeID loadEdgesFromFile(storage::io::FileReader &file_reader,
 
     return number_of_edges;
 }
+
+inline EdgeID loadAnnotationData(storage::io::FileReader &file_reader,
+                             std::vector<extractor::NodeBasedEdgeSharedData> &metadata)
+{
+    auto const meta_data_count = file_reader.ReadElementCount64();
+    metadata.resize(meta_data_count);
+    file_reader.ReadInto(metadata.data(),meta_data_count);
+    return meta_data_count;
+}
+
 }
 }
 

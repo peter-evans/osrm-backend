@@ -33,9 +33,9 @@ inline RoadClassification roadClass(const ConnectedRoad &road,
     return node_data_container[graph.GetEdgeData(road.eid).shared_data_id].road_classification;
 }
 
-inline bool isRampClass(EdgeID eid, const util::NodeBasedDynamicGraph &node_based_graph, const EdgeBasedNodeDataContainer &node_data_containe)
+inline bool isRampClass(EdgeID eid, const util::NodeBasedDynamicGraph &node_based_graph, const EdgeBasedNodeDataContainer &node_data_container)
 {
-    return node_data_containe[node_based_graph.GetEdgeData(eid).shared_data_id].road_classification.IsRampClass();
+    return node_data_container[node_based_graph.GetEdgeData(eid).shared_data_id].road_classification.IsRampClass();
 }
 
 } // namespace
@@ -105,7 +105,7 @@ operator()(const NodeID, const EdgeID via_eid, Intersection intersection) const
 Intersection MotorwayHandler::fromMotorway(const EdgeID via_eid, Intersection intersection) const
 {
     const auto &in_data = node_data_container[node_based_graph.GetEdgeData(via_eid).shared_data_id];
-    BOOST_ASSERT(isMotorwayClass(via_eid, node_based_graph));
+    BOOST_ASSERT(isMotorwayClass(via_eid, node_based_graph, node_data_container));
 
     const auto countExitingMotorways = [this](const Intersection &intersection) {
         unsigned count = 0;

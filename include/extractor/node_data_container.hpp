@@ -47,6 +47,10 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     {
     }
 
+    EdgeBasedNodeDataContainerImpl(Vector<NodeBasedEdgeSharedData> data)
+    : data(std::move(data))
+    {}
+
     EdgeBasedNodeDataContainerImpl(Vector<GeometryID> geometry_ids,
                                    Vector<NameID> name_ids,
                                    Vector<ComponentID> component_ids,
@@ -117,7 +121,7 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
 
     // access the shared data of a set of nodes
     NodeBasedEdgeSharedData operator[](const EdgeID eid) const{
-        return NodeBasedEdgeSharedData();
+        return data[eid];
     }
 
   private:
@@ -126,6 +130,7 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     Vector<ComponentID> component_ids;
     Vector<TravelMode> travel_modes;
     Vector<ClassData> classes;
+    Vector<NodeBasedEdgeSharedData> data;
 };
 }
 
