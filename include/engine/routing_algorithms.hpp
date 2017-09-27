@@ -30,7 +30,7 @@ class RoutingAlgorithmsInterface
     virtual InternalRouteResult
     DirectShortestPathSearch(const PhantomNodes &phantom_node_pair) const = 0;
 
-    virtual std::vector<EdgeWeight>
+    virtual std::vector<EdgeDuration>
     ManyToManySearch(const std::vector<PhantomNode> &phantom_nodes,
                      const std::vector<std::size_t> &source_indices,
                      const std::vector<std::size_t> &target_indices) const = 0;
@@ -81,7 +81,7 @@ template <typename Algorithm> class RoutingAlgorithms final : public RoutingAlgo
     InternalRouteResult
     DirectShortestPathSearch(const PhantomNodes &phantom_nodes) const final override;
 
-    std::vector<EdgeWeight>
+    std::vector<EdgeDuration>
     ManyToManySearch(const std::vector<PhantomNode> &phantom_nodes,
                      const std::vector<std::size_t> &source_indices,
                      const std::vector<std::size_t> &target_indices) const final override;
@@ -201,7 +201,7 @@ InternalManyRoutesResult inline RoutingAlgorithms<
 }
 
 template <>
-inline std::vector<EdgeWeight>
+inline std::vector<EdgeDuration>
 RoutingAlgorithms<routing_algorithms::corech::Algorithm>::ManyToManySearch(
     const std::vector<PhantomNode> &,
     const std::vector<std::size_t> &,

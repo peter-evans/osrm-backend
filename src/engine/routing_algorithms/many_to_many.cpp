@@ -351,11 +351,12 @@ void backwardRoutingStep(const DataFacade<Algorithm> &facade,
 }
 
 template <typename Algorithm>
-std::vector<EdgeWeight> manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
-                                         const DataFacade<Algorithm> &facade,
-                                         const std::vector<PhantomNode> &phantom_nodes,
-                                         std::vector<std::size_t> source_indices,
-                                         std::vector<std::size_t> target_indices)
+std::pair<std::vector<EdgeWeight>, std::vector<EdgeDuration>>
+manyToManySearch(SearchEngineData<Algorithm> &engine_working_data,
+                 const DataFacade<Algorithm> &facade,
+                 const std::vector<PhantomNode> &phantom_nodes,
+                 std::vector<std::size_t> source_indices,
+                 std::vector<std::size_t> target_indices)
 {
     if (source_indices.empty())
     {
@@ -441,17 +442,17 @@ std::vector<EdgeWeight> manyToManySearch(SearchEngineData<Algorithm> &engine_wor
                           }
                       });
 
-    return durations_table;
+    return std::make_pair(weights_table, durations_table);
 }
 
-template std::vector<EdgeWeight>
+template std::pair<std::vector<EdgeWeight>, std::vector<EdgeDuration>>
 manyToManySearch(SearchEngineData<ch::Algorithm> &engine_working_data,
                  const DataFacade<ch::Algorithm> &facade,
                  const std::vector<PhantomNode> &phantom_nodes,
                  std::vector<std::size_t> source_indices,
                  std::vector<std::size_t> target_indices);
 
-template std::vector<EdgeWeight>
+template std::pair<std::vector<EdgeWeight>, std::vector<EdgeDuration>>
 manyToManySearch(SearchEngineData<mld::Algorithm> &engine_working_data,
                  const DataFacade<mld::Algorithm> &facade,
                  const std::vector<PhantomNode> &phantom_nodes,
@@ -462,11 +463,12 @@ namespace mld
 {
 
 template <bool DIRECTION>
-std::vector<EdgeWeight> oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
-                                        const DataFacade<Algorithm> &facade,
-                                        const std::vector<PhantomNode> &phantom_nodes,
-                                        std::size_t phantom_index,
-                                        std::vector<std::size_t> phantom_indices)
+std::pair<std::vector<EdgeWeight>, std::vector<EdgeDuration>>
+oneToManySearch(SearchEngineData<Algorithm> &engine_working_data,
+                const DataFacade<Algorithm> &facade,
+                const std::vector<PhantomNode> &phantom_nodes,
+                std::size_t phantom_index,
+                std::vector<std::size_t> phantom_indices)
 {
     if (phantom_indices.empty())
     {
@@ -662,17 +664,17 @@ std::vector<EdgeWeight> oneToManySearch(SearchEngineData<Algorithm> &engine_work
                                       phantom_indices);
     }
 
-    return durations;
+    return std::make_pair(weights, durations);
 }
 
-template std::vector<EdgeWeight>
+template std::pair<std::vector<EdgeWeight>, std::vector<EdgeDuration>>
 oneToManySearch<FORWARD_DIRECTION>(SearchEngineData<Algorithm> &engine_working_data,
                                    const DataFacade<Algorithm> &facade,
                                    const std::vector<PhantomNode> &phantom_nodes,
                                    std::size_t phantom_index,
                                    std::vector<std::size_t> phantom_indices);
 
-template std::vector<EdgeWeight>
+template std::pair<std::vector<EdgeWeight>, std::vector<EdgeDuration>>
 oneToManySearch<REVERSE_DIRECTION>(SearchEngineData<Algorithm> &engine_working_data,
                                    const DataFacade<Algorithm> &facade,
                                    const std::vector<PhantomNode> &phantom_nodes,
