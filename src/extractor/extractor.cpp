@@ -589,6 +589,7 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
     const auto &traffic_signals = node_based_graph_factory.GetTrafficSignals();
     std::swap(coordinates,node_based_graph_factory.GetCoordinates());
     const auto & node_based_graph_data = EdgeBasedNodeDataContainer(node_based_graph_factory.GetAnnotationData());
+    osm_node_ids = node_based_graph_factory.GetOsmNodes();
 
     conditional_turn_restrictions =
         removeInvalidRestrictions(std::move(conditional_turn_restrictions), *node_based_graph);
@@ -601,7 +602,6 @@ std::pair<std::size_t, EdgeID> Extractor::BuildEdgeExpandedGraph(
                                                    barrier_nodes,
                                                    traffic_signals,
                                                    coordinates,
-                                                   osm_node_ids,
                                                    scripting_environment.GetProfileProperties(),
                                                    name_table,
                                                    turn_lane_map);

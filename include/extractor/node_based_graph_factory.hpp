@@ -47,6 +47,7 @@ class NodeBasedGraphFactory
     auto &GetCompressedEdges() { return compressed_edge_container; }
     auto &GetCoordinates() { return coordinates; }
     auto &GetAnnotationData() { return annotation_data; }
+    auto &GetOsmNodes() { return osm_node_ids; }
   private:
     // Get the information from the *.osrm file (direct product of the extractor callback/extraction
     // containers) and prepare the graph creation process

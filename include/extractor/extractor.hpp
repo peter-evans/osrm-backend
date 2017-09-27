@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "extractor/edge_based_graph_factory.hpp"
 #include "extractor/extractor_config.hpp"
 #include "extractor/graph_compressor.hpp"
+#include "extractor/packed_osm_ids.hpp"
 
 #include "util/guidance/bearing_class.hpp"
 #include "util/guidance/entry_class.hpp"

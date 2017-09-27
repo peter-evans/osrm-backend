@@ -52,7 +52,7 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     {
     }
 
-    GeometryID GetGeometryID(const NodeID node_id) const { return {}; }
+    GeometryID GetGeometryID(const NodeID node_id) const { return {0,true}; }
 
     ComponentID GetComponentID(const NodeID node_id) const { return {0,false}; } //component_ids[node_id]; }
 

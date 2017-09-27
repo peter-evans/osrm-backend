@@ -14,7 +14,6 @@
 #include "extractor/nbg_to_ebg.hpp"
 #include "extractor/node_data_container.hpp"
 #include "extractor/original_edge_data.hpp"
-#include "extractor/packed_osm_ids.hpp"
 #include "extractor/profile_properties.hpp"
 #include "extractor/query_node.hpp"
 #include "extractor/restriction_index.hpp"
@@ -77,7 +76,6 @@ class EdgeBasedGraphFactory
                                    const std::unordered_set<NodeID> &barrier_nodes,
                                    const std::unordered_set<NodeID> &traffic_lights,
                                    const std::vector<util::Coordinate> &coordinates,
-                                   const extractor::PackedOSMIDs &osm_node_ids,
                                    ProfileProperties profile_properties,
                                    const util::NameTable &name_table,
                                    guidance::LaneDescriptionMap &lane_description_map);
@@ -155,7 +153,6 @@ class EdgeBasedGraphFactory
     std::uint64_t m_number_of_edge_based_nodes;
 
     const std::vector<util::Coordinate> &m_coordinates;
-    const extractor::PackedOSMIDs &m_osm_node_ids;
     std::shared_ptr<util::NodeBasedDynamicGraph> m_node_based_graph;
 
     const std::unordered_set<NodeID> &m_barrier_nodes;

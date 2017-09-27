@@ -460,6 +460,7 @@ class ContiguousInternalMemoryDataFacadeBase : public BaseDataFacade
             geometries_index_ptr, data_layout.num_entries[storage::DataLayout::GEOMETRIES_INDEX]);
 
         auto num_entries = data_layout.num_entries[storage::DataLayout::GEOMETRIES_NODE_LIST];
+        std::cout << "Loading geometry for " << num_entries << " entries." << std::endl;
 
         auto geometries_node_list_ptr = data_layout.GetBlockPtr<NodeID>(
             memory_block, storage::DataLayout::GEOMETRIES_NODE_LIST);

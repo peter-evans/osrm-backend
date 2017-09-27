@@ -18,6 +18,7 @@ NodeBasedGraphFactory::NodeBasedGraphFactory(
 {
     LoadDataFromFile(input_file);
     Compress(scripting_environment, turn_restrictions, conditional_turn_restrictions);
+    CompressGeometry();
 }
 
 // load the data serialised during the extraction run
@@ -66,6 +67,9 @@ void NodeBasedGraphFactory::Compress(
                               annotation_data,
                               compressed_edge_container);
 
+    // allocate segment data
+    compressed_edge_container.InitializeBothwayVector();
+
     // TODO remap node-based graph shared data index / remove unused entries (from compression)
 
     // assign geometries for all edges
@@ -96,7 +100,7 @@ void NodeBasedGraphFactory::CompressGeometry()
 
             auto from = nbg_node_u, to = nbg_node_v;
             // if we found a non-forward edge reverse and try again
-            if (nbg_edge_data.edge_id == SPECIAL_NODEID)
+            if (!nbg_edge_data.flags.forward)
                 std::swap(from, to);
 
             // find forward edge id and
@@ -110,6 +114,8 @@ void NodeBasedGraphFactory::CompressGeometry()
             BOOST_ASSERT(edge_id_2 != SPECIAL_EDGEID);
 
             auto packed_geometry_id = compressed_edge_container.ZipEdges(edge_id_1, edge_id_2);
+            // TODO assign to some edge
+            // compressed_output_graph->GetEdgeData(nbg_edge_id).geometry_id = packed_geometry_id;
         }
     }
 }

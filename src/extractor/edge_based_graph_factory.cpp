@@ -66,12 +66,11 @@ EdgeBasedGraphFactory::EdgeBasedGraphFactory(
     const std::unordered_set<NodeID> &barrier_nodes,
     const std::unordered_set<NodeID> &traffic_lights,
     const std::vector<util::Coordinate> &coordinates,
-    const extractor::PackedOSMIDs &osm_node_ids,
     ProfileProperties profile_properties,
     const util::NameTable &name_table,
     guidance::LaneDescriptionMap &lane_description_map)
     : m_edge_based_node_container(node_data_container), m_number_of_edge_based_nodes(0),
-      m_coordinates(coordinates), m_osm_node_ids(osm_node_ids),
+      m_coordinates(coordinates),
       m_node_based_graph(std::move(node_based_graph)), m_barrier_nodes(barrier_nodes),
       m_traffic_lights(traffic_lights), m_compressed_edge_container(compressed_edge_container),
       profile_properties(std::move(profile_properties)), name_table(name_table),
