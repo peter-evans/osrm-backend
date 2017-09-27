@@ -81,7 +81,7 @@ operator()(const NodeID /*nid*/,
 
             // 180 for undesired name-ids
             if (desired_name_id !=
-                node_data_container[node_based_graph.GetEdgeData(road.eid).shared_data_id].name_id)
+                node_data_container[node_based_graph.GetEdgeData(road.eid).annotation_data].name_id)
                 result_score += 180;
 
             return result_score + angularDeviation(road.angle, STRAIGHT_ANGLE);
@@ -129,7 +129,7 @@ operator()(const NodeID /*nid*/,
 
             // 180 for undesired name-ids
             if (desired_name_id !=
-                node_data_container[node_based_graph.GetEdgeData(road.eid).shared_data_id].name_id)
+                node_data_container[node_based_graph.GetEdgeData(road.eid).annotation_data].name_id)
                 result_score += 180;
 
             return result_score + angularDeviation(road.angle, STRAIGHT_ANGLE);
@@ -140,7 +140,7 @@ operator()(const NodeID /*nid*/,
 
     const auto count_desired_name =
         std::count_if(std::begin(intersection), std::end(intersection), [&](const auto &road) {
-            return node_data_container[node_based_graph.GetEdgeData(road.eid).shared_data_id]
+            return node_data_container[node_based_graph.GetEdgeData(road.eid).annotation_data]
                        .name_id == desired_name_id;
         });
     if (count_desired_name > 2)
@@ -152,7 +152,7 @@ operator()(const NodeID /*nid*/,
     const auto is_valid_choice = !requires_entry || min_element->entry_allowed;
     const auto is_only_choice_with_same_name =
         count_desired_name <= 2 && // <= in case we come from a bridge
-        node_data_container[node_based_graph.GetEdgeData(min_element->eid).shared_data_id]
+        node_data_container[node_based_graph.GetEdgeData(min_element->eid).annotation_data]
                 .name_id == desired_name_id &&
         angularDeviation(min_element->angle, STRAIGHT_ANGLE) < 100; // don't do crazy turns
     const auto has_valid_angle =

@@ -47,20 +47,20 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     {
     }
 
-    EdgeBasedNodeDataContainerImpl(Vector<NodeBasedEdgeSharedData> data)
+    EdgeBasedNodeDataContainerImpl(Vector<NodeBasedEdgeAnnotation> data)
         : data(std::move(data))
     {
     }
 
-    GeometryID GetGeometryID(const NodeID node_id) const { return data[node_id].geometry_id; }
-
-    TravelMode GetTravelMode(const NodeID node_id) const { return data[node_id].travel_mode; }
-
-    NameID GetNameID(const NodeID node_id) const { return data[node_id].name_id; }
+    GeometryID GetGeometryID(const NodeID node_id) const { return {}; }
 
     ComponentID GetComponentID(const NodeID node_id) const { return {0,false}; } //component_ids[node_id]; }
 
-    ClassData GetClassData(const NodeID node_id) const { return data[node_id].classes; }
+    TravelMode GetTravelMode(const AnnotationID node_id) const { return data[node_id].travel_mode; }
+
+    NameID GetNameID(const AnnotationID node_id) const { return data[node_id].name_id; }
+
+    ClassData GetClassData(const AnnotationID node_id) const { return data[node_id].classes; }
 
     /*
     // Used by EdgeBasedGraphFactory to fill data structure
@@ -113,7 +113,7 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     }
 
     // access the shared data of a set of nodes
-    NodeBasedEdgeSharedData operator[](const EdgeID eid) const{
+    NodeBasedEdgeAnnotation operator[](const EdgeID eid) const{
         return data[eid];
     }
 
@@ -123,7 +123,7 @@ template <storage::Ownership Ownership> class EdgeBasedNodeDataContainerImpl
     //Vector<ComponentID> component_ids;
     //Vector<TravelMode> travel_modes;
     //Vector<ClassData> classes;
-    Vector<NodeBasedEdgeSharedData> data;
+    Vector<NodeBasedEdgeAnnotation> data;
 };
 }
 

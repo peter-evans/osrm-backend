@@ -104,7 +104,7 @@ inline EdgeID loadEdgesFromFile(storage::io::FileReader &file_reader,
         const auto &prev_edge = edge_list[i - 1];
 
         BOOST_ASSERT_MSG(edge.weight > 0, "loaded null weight");
-        BOOST_ASSERT_MSG(edge.forward, "edge must be oriented in forward direction");
+        BOOST_ASSERT_MSG(edge.flags.forward, "edge must be oriented in forward direction");
 
         BOOST_ASSERT_MSG(edge.source != edge.target, "loaded edges contain a loop");
         BOOST_ASSERT_MSG(edge.source != prev_edge.source || edge.target != prev_edge.target,
@@ -118,7 +118,7 @@ inline EdgeID loadEdgesFromFile(storage::io::FileReader &file_reader,
 }
 
 inline EdgeID loadAnnotationData(storage::io::FileReader &file_reader,
-                             std::vector<extractor::NodeBasedEdgeSharedData> &metadata)
+                             std::vector<extractor::NodeBasedEdgeAnnotation> &metadata)
 {
     auto const meta_data_count = file_reader.ReadElementCount64();
     metadata.resize(meta_data_count);

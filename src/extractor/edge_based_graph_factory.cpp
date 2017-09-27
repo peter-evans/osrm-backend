@@ -191,20 +191,20 @@ NBGToEBG EdgeBasedGraphFactory::InsertEdgeBasedNode(const NodeID node_u, const N
         BOOST_ASSERT(current_edge_target_coordinate_id != current_edge_source_coordinate_id);
 
         // build edges
-        m_edge_based_node_segments.emplace_back(edge_id_to_segment_id(forward_data.shared_data_id),
-                                                edge_id_to_segment_id(reverse_data.shared_data_id),
+        m_edge_based_node_segments.emplace_back(edge_id_to_segment_id(forward_data.annotation_data),
+                                                edge_id_to_segment_id(reverse_data.annotation_data),
                                                 current_edge_source_coordinate_id,
                                                 current_edge_target_coordinate_id,
                                                 i);
 
         m_edge_based_node_is_startpoint.push_back(
-            m_edge_based_node_container[forward_data.shared_data_id].startpoint || m_edge_based_node_container[reverse_data.shared_data_id].startpoint);
+            forward_data.flags.startpoint || reverse_data.flags.startpoint);
         current_edge_source_coordinate_id = current_edge_target_coordinate_id;
     }
 
     BOOST_ASSERT(current_edge_source_coordinate_id == node_v);
 
-    return NBGToEBG{node_u, node_v, forward_data.shared_data_id, reverse_data.shared_data_id};
+    return NBGToEBG{node_u, node_v, forward_data.annotation_data, reverse_data.annotation_data};
 }
 
 void EdgeBasedGraphFactory::Run(ScriptingEnvironment &scripting_environment,
@@ -567,8 +567,6 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
 
             const auto &edge_data1 = m_node_based_graph->GetEdgeData(node_based_edge_from);
             const auto &edge_data2 = m_node_based_graph->GetEdgeData(node_based_edge_to);
-            const auto &shared_edge_data1 = m_edge_based_node_container[edge_data1.shared_data_id];
-            const auto &shared_edge_data2 = m_edge_based_node_container[edge_data2.shared_data_id];
 
             BOOST_ASSERT(edge_data1.edge_id != edge_data2.edge_id);
             BOOST_ASSERT(!edge_data1.reversed);
@@ -584,8 +582,8 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
             // compute weight and duration penalties
             auto is_traffic_light = m_traffic_lights.count(node_at_center_of_intersection);
             ExtractionTurn extracted_turn(turn, is_traffic_light);
-            extracted_turn.source_restricted = shared_edge_data1.restricted;
-            extracted_turn.target_restricted = shared_edge_data2.restricted;
+            extracted_turn.source_restricted = edge_data1.flags.restricted;
+            extracted_turn.target_restricted = edge_data2.flags.restricted;
             scripting_environment.ProcessTurn(extracted_turn);
 
             // turn penalties are limited to [-2^15, 2^15) which roughly

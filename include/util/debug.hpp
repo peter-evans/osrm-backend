@@ -72,14 +72,13 @@ inline void print(const extractor::guidance::Intersection &intersection)
 }
 
 inline void print(const NodeBasedDynamicGraph &node_based_graph,
-                  const extractor::EdgeBasedNodeDataContainer &node_data_container,
                   const extractor::guidance::Intersection &intersection)
 {
     std::cout << "  Intersection:\n";
     for (const auto &road : intersection)
     {
         std::cout << "\t" << toString(road) << "\n";
-        std::cout << "\t\t" << node_data_container[node_based_graph.GetEdgeData(road.eid).shared_data_id].road_classification.ToString()
+        std::cout << "\t\t" << node_based_graph.GetEdgeData(road.eid).flags.road_classification.ToString()
                   << "\n";
     }
     std::cout << std::flush;

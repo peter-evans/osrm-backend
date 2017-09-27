@@ -15,28 +15,60 @@ namespace osrm
 namespace extractor
 {
 
-using SharedDataID = std::uint32_t;
+using AnnotationID = std::uint32_t;
 
-// Shared Data which is the same for many NodeBasedEdges
-struct NodeBasedEdgeSharedData
+// Flags describing the class of the road. This data is used during creation of graphs/guidance
+// generation but is not available in annotation/navigation
+struct NodeBasedEdgeClassification
 {
-    NameID name_id;                                   // 32 4
+    std::uint8_t forward : 1;                         // 1
+    std::uint8_t backward : 1;                        // 1
+    std::uint8_t is_split : 1;                        // 1
     std::uint8_t roundabout : 1;                      // 1
     std::uint8_t circular : 1;                        // 1
     std::uint8_t startpoint : 1;                      // 1
     std::uint8_t restricted : 1;                      // 1
-    TravelMode travel_mode : 4;                       // 4
-    ClassData classes;                                // 8  1
-    LaneDescriptionID lane_description_id;            // 16 2
     guidance::RoadClassification road_classification; // 16 2
-    GeometryID geometry_id;                           // 32 4
 
-    bool CanCombineWith(const NodeBasedEdgeSharedData &other) const
+    NodeBasedEdgeClassification();
+
+    NodeBasedEdgeClassification(const bool forward,
+                                const bool backward,
+                                const bool is_split,
+                                const bool roundabout,
+                                const bool circular,
+                                const bool startpoint,
+                                const bool restricted,
+                                guidance::RoadClassification road_classification)
+        : forward(forward), backward(backward), is_split(is_split), roundabout(roundabout),
+          circular(circular), startpoint(startpoint), restricted(restricted),
+          road_classification(road_classification)
     {
-        return (std::tie(name_id, road_classification) ==
-                std::tie(other.name_id, other.road_classification)) &&
+    }
+
+    bool CanCombineWith(const NodeBasedEdgeClassification &other) const
+    {
+        return (road_classification == other.road_classification) && (forward == other.forward) &&
+               (backward == other.backward) && (is_split) == (other.is_split) &&
                (roundabout == other.roundabout) && (circular == other.circular) &&
-               (startpoint == other.startpoint) && (restricted == other.restricted) &&
+               (startpoint == other.startpoint) && (restricted == other.restricted);
+    }
+};
+
+// Annotative data, used in parts in guidance generation, in parts during navigation (classes) but
+// mostly for annotation of edges. The entry can be shared between multiple edges and usually
+// describes features present on OSM ways. This is the place to put specific data that you want to
+// see as part of the API output but that does not influence navigation
+struct NodeBasedEdgeAnnotation
+{
+    NameID name_id;                        // 32 4
+    TravelMode travel_mode : 4;            // 4
+    ClassData classes;                     // 8  1
+    LaneDescriptionID lane_description_id; // 16 2
+
+    bool CanCombineWith(const NodeBasedEdgeAnnotation &other) const
+    {
+        return (std::tie(name_id, classes) == std::tie(other.name_id, other.classes)) &&
                (travel_mode == other.travel_mode);
     }
 };
@@ -49,33 +81,32 @@ struct NodeBasedEdge
                   NodeID target,
                   EdgeWeight weight,
                   EdgeDuration duration,
-                  bool forward,
-                  bool backward,
-                  bool is_split,
-                  SharedDataID shared_data_id);
+                  GeometryID geometry_id,
+                  AnnotationID annotation_data,
+                  NodeBasedEdgeClassification flags);
 
     bool operator<(const NodeBasedEdge &other) const;
 
-    NodeID source;               // 32 4
-    NodeID target;               // 32 4
-    EdgeWeight weight;           // 32 4
-    EdgeDuration duration;       // 32 4
-    std::uint8_t forward : 1;    // 1
-    std::uint8_t backward : 1;   // 1
-    std::uint8_t is_split : 1;   // 1
-    SharedDataID shared_data_id; // 32 4
+    NodeID source;                     // 32 4
+    NodeID target;                     // 32 4
+    EdgeWeight weight;                 // 32 4
+    EdgeDuration duration;             // 32 4
+    GeometryID geometry_id;            // 32 4
+    AnnotationID annotation_data;      // 32 4
+    NodeBasedEdgeClassification flags; // 32 4
 };
 
 struct NodeBasedEdgeWithOSM : NodeBasedEdge
 {
+    NodeBasedEdgeWithOSM();
+
     NodeBasedEdgeWithOSM(OSMNodeID source,
                          OSMNodeID target,
                          EdgeWeight weight,
                          EdgeDuration duration,
-                         bool forward,
-                         bool backward,
-                         bool is_split,
-                         SharedDataID shared_data_id);
+                         GeometryID geometry_id,
+                         AnnotationID annotation_data,
+                         NodeBasedEdgeClassification flags);
 
     OSMNodeID osm_source_id;
     OSMNodeID osm_target_id;
@@ -83,9 +114,14 @@ struct NodeBasedEdgeWithOSM : NodeBasedEdge
 
 // Impl.
 
+inline NodeBasedEdgeClassification::NodeBasedEdgeClassification()
+    : forward(false), backward(false), is_split(false), roundabout(false), circular(false),
+      startpoint(false), restricted(false)
+{
+}
+
 inline NodeBasedEdge::NodeBasedEdge()
-    : source(SPECIAL_NODEID), target(SPECIAL_NODEID), weight(0), duration(0), forward(false),
-      backward(false), is_split(false), shared_data_id(-1)
+    : source(SPECIAL_NODEID), target(SPECIAL_NODEID), weight(0), duration(0), annotation_data(-1)
 {
 }
 
@@ -93,12 +129,11 @@ inline NodeBasedEdge::NodeBasedEdge(NodeID source,
                                     NodeID target,
                                     EdgeWeight weight,
                                     EdgeDuration duration,
-                                    bool forward,
-                                    bool backward,
-                                    bool is_split,
-                                    SharedDataID shared_data_id)
-    : source(source), target(target), weight(weight), duration(duration), forward(forward),
-      backward(backward), is_split(is_split), shared_data_id(shared_data_id)
+                                    GeometryID geometry_id,
+                                    AnnotationID annotation_data,
+                                    NodeBasedEdgeClassification flags)
+    : source(source), target(target), weight(weight), duration(duration), geometry_id(geometry_id),
+      annotation_data(annotation_data), flags(flags)
 {
 }
 
@@ -110,7 +145,8 @@ inline bool NodeBasedEdge::operator<(const NodeBasedEdge &other) const
         {
             if (weight == other.weight)
             {
-                return forward && backward && ((!other.forward) || (!other.backward));
+                return flags.forward && flags.backward &&
+                       ((!other.flags.forward) || (!other.flags.backward));
             }
             return weight < other.weight;
         }
@@ -123,23 +159,21 @@ inline NodeBasedEdgeWithOSM::NodeBasedEdgeWithOSM(OSMNodeID source,
                                                   OSMNodeID target,
                                                   EdgeWeight weight,
                                                   EdgeDuration duration,
-                                                  bool forward,
-                                                  bool backward,
-                                                  bool is_split,
-                                                  SharedDataID shared_data_id)
-    : NodeBasedEdge(SPECIAL_NODEID,
-                    SPECIAL_NODEID,
-                    weight,
-                    duration,
-                    forward,
-                    backward,
-                    is_split,
-                    shared_data_id),
+                                                  GeometryID geometry_id,
+                                                  AnnotationID annotation_data,
+                                                  NodeBasedEdgeClassification flags)
+    : NodeBasedEdge(
+          SPECIAL_NODEID, SPECIAL_NODEID, weight, duration, geometry_id, annotation_data, flags),
       osm_source_id(std::move(source)), osm_target_id(std::move(target))
 {
 }
 
-static_assert(sizeof(extractor::NodeBasedEdge) == 24,
+inline NodeBasedEdgeWithOSM::NodeBasedEdgeWithOSM()
+    : osm_source_id(MIN_OSM_NODEID), osm_target_id(MIN_OSM_NODEID)
+{
+}
+
+static_assert(sizeof(extractor::NodeBasedEdge) == 28,
               "Size of extractor::NodeBasedEdge type is "
               "bigger than expected. This will influence "
               "memory consumption.");

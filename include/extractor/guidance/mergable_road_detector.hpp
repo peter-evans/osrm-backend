@@ -78,8 +78,10 @@ class MergableRoadDetector
 
     // When it comes to merging roads, we need to find out if two ways actually represent the
     // same road. This check tries to identify roads which are the same road in opposite directions
-    bool EdgeDataSupportsMerge(const NodeBasedEdgeSharedData &lhs_edge_data,
-                               const NodeBasedEdgeSharedData &rhs_edge_data) const;
+    bool EdgeDataSupportsMerge(const NodeBasedEdgeClassification &lhs_flags,
+                               const NodeBasedEdgeClassification &rhs_flags,
+                               const NodeBasedEdgeAnnotation &lhs_edge_annotation,
+                               const NodeBasedEdgeAnnotation &rhs_edge_annotation) const;
 
     // Detect traffic loops.
     // Since OSRM cannot handle loop edges, we cannot directly see a connection between a node and

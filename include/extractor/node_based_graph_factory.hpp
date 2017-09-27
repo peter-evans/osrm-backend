@@ -45,8 +45,8 @@ class NodeBasedGraphFactory
     auto const &GetBarriers() const { return barriers; }
     auto const &GetTrafficSignals() const { return traffic_signals; }
     auto &GetCompressedEdges() { return compressed_edge_container; }
-    auto & GetCoordinates() { return coordinates; }
-    auto & GetAnnotationData() { return annotation_data; }
+    auto &GetCoordinates() { return coordinates; }
+    auto &GetAnnotationData() { return annotation_data; }
   private:
     // Get the information from the *.osrm file (direct product of the extractor callback/extraction
     // containers) and prepare the graph creation process
@@ -59,12 +59,17 @@ class NodeBasedGraphFactory
                   std::vector<TurnRestriction> &turn_restrictions,
                   std::vector<ConditionalTurnRestriction> &conditional_turn_restrictions);
 
+    // Most ways are bidirectional, making the geometry in forward and backward direction the same,
+    // except for reversal. We make use of this fact by keeping only one representation of the
+    // geometry around
+    void CompressGeometry();
+
     // After produce, this will contain a compresse version of the node-based graph
     std::shared_ptr<util::NodeBasedDynamicGraph> compressed_output_graph;
     // To store the meta-data for the graph that is purely annotative / not used for the navigation
     // itself. Since the edges of a node-based graph form the nodes of the edge based graphs, we
     // transform this data into the EdgeBasedNodeDataContainer as output storage.
-    std::vector<NodeBasedEdgeSharedData> annotation_data;
+    std::vector<NodeBasedEdgeAnnotation> annotation_data;
 
     // General Information about the graph, not used outside of extractor
     std::unordered_set<NodeID> barriers;

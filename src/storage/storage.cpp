@@ -253,7 +253,7 @@ void Storage::PopulateLayout(DataLayout &layout)
         io::FileReader nodes_data_file(config.GetPath(".osrm.ebg_nodes"),
                                        io::FileReader::VerifyFingerprint);
         const auto nodes_number = nodes_data_file.ReadElementCount64();
-        layout.SetBlockSize<extractor::NodeBasedEdgeSharedData>(DataLayout::ANNOTATION_DATA_LIST, nodes_number);
+        layout.SetBlockSize<extractor::NodeBasedEdgeAnnotation>(DataLayout::ANNOTATION_DATA_LIST, nodes_number);
     }
 
     if (boost::filesystem::exists(config.GetPath(".osrm.hsgr")))
@@ -730,9 +730,9 @@ void Storage::PopulateData(const DataLayout &layout, char *memory_ptr)
             classes_list_ptr, layout.num_entries[storage::DataLayout::CLASSES_LIST]);
         */
 
-        auto annotation_data_list_ptr = layout.GetBlockPtr<extractor::NodeBasedEdgeSharedData, true>(
+        auto annotation_data_list_ptr = layout.GetBlockPtr<extractor::NodeBasedEdgeAnnotation, true>(
             memory_ptr, storage::DataLayout::ANNOTATION_DATA_LIST);
-        util::vector_view<extractor::NodeBasedEdgeSharedData> annotation_data(
+        util::vector_view<extractor::NodeBasedEdgeAnnotation> annotation_data(
             annotation_data_list_ptr, layout.num_entries[storage::DataLayout::ANNOTATION_DATA_LIST]);
 
         extractor::EdgeBasedNodeDataView node_data(std::move(annotation_data));

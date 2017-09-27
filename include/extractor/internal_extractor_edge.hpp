@@ -58,31 +58,24 @@ struct InternalExtractorEdge
     using WeightData = detail::ByEdgeOrByMeterValue;
     using DurationData = detail::ByEdgeOrByMeterValue;
 
-    explicit InternalExtractorEdge()
-        : result(MIN_OSM_NODEID,
-                 MIN_OSM_NODEID,
-                 0,
-                 0,
-                 false, // forward
-                 false, // backward
-                 false, // split edge,
-                 -1),
-          weight_data(), duration_data()
-    {
-    }
+    explicit InternalExtractorEdge() : weight_data(), duration_data() {}
 
     explicit InternalExtractorEdge(OSMNodeID source,
                                    OSMNodeID target,
                                    WeightData weight_data,
                                    DurationData duration_data,
-                                   bool forward,
-                                   bool backward,
-                                   bool is_split,
-                                   std::size_t shared_data_id,
                                    util::Coordinate source_coordinate)
-        : result(source, target, 0, 0, forward, backward, is_split, shared_data_id),
-          weight_data(std::move(weight_data)), duration_data(std::move(duration_data)),
-          source_coordinate(std::move(source_coordinate))
+        : result(source, target, 0, 0, {}, -1, {}), weight_data(std::move(weight_data)),
+          duration_data(std::move(duration_data)), source_coordinate(std::move(source_coordinate))
+    {
+    }
+
+    explicit InternalExtractorEdge(NodeBasedEdgeWithOSM edge,
+                                   WeightData weight_data,
+                                   DurationData duration_data,
+                                   util::Coordinate source_coordinate)
+        : result(std::move(edge)), weight_data(weight_data), duration_data(duration_data),
+          source_coordinate(source_coordinate)
     {
     }
 
@@ -98,27 +91,13 @@ struct InternalExtractorEdge
     // necessary static util functions for stxxl's sorting
     static InternalExtractorEdge min_osm_value()
     {
-        return InternalExtractorEdge(MIN_OSM_NODEID,
-                                     MIN_OSM_NODEID,
-                                     WeightData(),
-                                     DurationData(),
-                                     false, // forward
-                                     false, // backward
-                                     false, // split edge
-                                     -1,
-                                     util::Coordinate());
+        return InternalExtractorEdge(
+            MIN_OSM_NODEID, MIN_OSM_NODEID, WeightData(), DurationData(), util::Coordinate());
     }
     static InternalExtractorEdge max_osm_value()
     {
-        return InternalExtractorEdge(MAX_OSM_NODEID,
-                                     MAX_OSM_NODEID,
-                                     WeightData(),
-                                     DurationData(),
-                                     false, // forward
-                                     false, // backward
-                                     false, // split edge
-                                     -1,
-                                     util::Coordinate());
+        return InternalExtractorEdge(
+            MAX_OSM_NODEID, MAX_OSM_NODEID, WeightData(), DurationData(), util::Coordinate());
     }
 
     static InternalExtractorEdge min_internal_value()

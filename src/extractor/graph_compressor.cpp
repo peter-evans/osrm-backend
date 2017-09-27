@@ -128,10 +128,10 @@ void GraphCompressor::Compress(
 
             const EdgeData &fwd_edge_data1 = graph.GetEdgeData(forward_e1);
             const EdgeData &rev_edge_data1 = graph.GetEdgeData(reverse_e1);
-            const auto fwd_shared_data1 = node_data_container[fwd_edge_data1.shared_data_id];
-            const auto fwd_shared_data2 = node_data_container[fwd_edge_data2.shared_data_id];
-            const auto rev_shared_data1 = node_data_container[rev_edge_data1.shared_data_id];
-            const auto rev_shared_data2 = node_data_container[rev_edge_data2.shared_data_id];
+            const auto fwd_annotation_data1 = node_data_container[fwd_edge_data1.annotation_data];
+            const auto fwd_annotation_data2 = node_data_container[fwd_edge_data2.annotation_data];
+            const auto rev_annotation_data1 = node_data_container[rev_edge_data1.annotation_data];
+            const auto rev_annotation_data2 = node_data_container[rev_edge_data2.annotation_data];
 
             if (graph.FindEdgeInEitherDirection(node_u, node_w) != SPECIAL_EDGEID)
             {
@@ -139,16 +139,16 @@ void GraphCompressor::Compress(
             }
 
             // this case can happen if two ways with different names overlap
-            if ((fwd_shared_data1.name_id != rev_shared_data1.name_id) ||
-                (fwd_shared_data2.name_id != rev_shared_data2.name_id))
+            if ((fwd_annotation_data1.name_id != rev_annotation_data1.name_id) ||
+                (fwd_annotation_data2.name_id != rev_annotation_data2.name_id))
             {
                 continue;
             }
 
-            if (fwd_edge_data1.CanCombineWith(fwd_edge_data2) &&
-                rev_edge_data1.CanCombineWith(rev_edge_data2) &&
-                fwd_shared_data1.CanCombineWith(fwd_shared_data2) &&
-                rev_shared_data1.CanCombineWith(rev_shared_data2))
+            if (fwd_edge_data1.flags.CanCombineWith(fwd_edge_data2.flags) &&
+                rev_edge_data1.flags.CanCombineWith(rev_edge_data2.flags) &&
+                fwd_annotation_data1.CanCombineWith(fwd_annotation_data2) &&
+                rev_annotation_data1.CanCombineWith(rev_annotation_data2))
             {
                 /*
                  * Remember Lane Data for compressed parts. This handles scenarios where lane-data
@@ -190,13 +190,13 @@ void GraphCompressor::Compress(
                 // TODO set the correct shared lane data id
                 /*
                 graph.GetEdgeData(forward_e1).lane_description_id = selectLaneID(
-                    fwd_shared_data1.lane_description_id, fwd_shared_data2.lane_description_id);
+                    fwd_annotation_data1.lane_description_id, fwd_annotation_data2.lane_description_id);
                 graph.GetEdgeData(reverse_e1).lane_description_id = selectLaneID(
-                    rev_shared_data1.lane_description_id, rev_shared_data2.lane_description_id);
+                    rev_annotation_data1.lane_description_id, rev_annotation_data2.lane_description_id);
                 graph.GetEdgeData(forward_e2).lane_description_id = selectLaneID(
-                    fwd_shared_data2.lane_description_id, fwd_shared_data1.lane_description_id);
+                    fwd_annotation_data2.lane_description_id, fwd_annotation_data1.lane_description_id);
                 graph.GetEdgeData(reverse_e2).lane_description_id = selectLaneID(
-                    rev_shared_data2.lane_description_id, rev_shared_data1.lane_description_id);
+                    rev_annotation_data2.lane_description_id, rev_annotation_data1.lane_description_id);
                 */
 
                 /*
@@ -213,8 +213,8 @@ void GraphCompressor::Compress(
                     // generate an artifical turn for the turn penalty generation
                     ExtractionTurn extraction_turn(true);
 
-                    extraction_turn.source_restricted = fwd_shared_data1.restricted;
-                    extraction_turn.target_restricted = fwd_shared_data2.restricted;
+                    extraction_turn.source_restricted = fwd_edge_data1.flags.restricted;
+                    extraction_turn.target_restricted = fwd_edge_data2.flags.restricted;
 
                     // we cannot handle this as node penalty, if it depends on turn direction
                     if (extraction_turn.source_restricted != extraction_turn.target_restricted)

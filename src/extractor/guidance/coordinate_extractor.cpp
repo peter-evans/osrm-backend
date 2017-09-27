@@ -123,7 +123,7 @@ util::Coordinate CoordinateExtractor::ExtractRepresentativeCoordinate(
     // coordinate set to add a small level of fault tolerance
     const constexpr double skipping_inaccuracies_distance = 2;
 
-    const auto &turn_edge_data = node_data_container[node_based_graph.GetEdgeData(turn_edge).shared_data_id];
+    const auto &turn_edge_data = node_based_graph.GetEdgeData(turn_edge).flags;
 
     // roundabouts, check early to avoid other costly checks
     if (turn_edge_data.roundabout || turn_edge_data.circular)
@@ -645,7 +645,7 @@ bool CoordinateExtractor::IsCurve(const std::vector<util::Coordinate> &coordinat
                                   const std::vector<double> &segment_distances,
                                   const double segment_length,
                                   const double considered_lane_width,
-                                  const extractor::NodeBasedEdgeSharedData &edge_data) const
+                                  const extractor::NodeBasedEdgeClassification &edge_data) const
 {
     BOOST_ASSERT(coordinates.size() > 2);
 

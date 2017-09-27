@@ -38,7 +38,7 @@ IntersectionGenerator::IntersectionGenerator(
     const std::unordered_set<NodeID> &barrier_nodes,
     const std::vector<util::Coordinate> &coordinates,
     const CompressedEdgeContainer &compressed_edge_container)
-    : node_based_graph(node_based_graph), node_data_container(node_data_container), restriction_map(restriction_map),
+    : node_based_graph(node_based_graph), restriction_map(restriction_map),
       barrier_nodes(barrier_nodes), coordinates(coordinates),
       coordinate_extractor(node_based_graph, node_data_container, compressed_edge_container, coordinates)
 {
@@ -77,7 +77,7 @@ IntersectionGenerator::ComputeIntersectionShape(const NodeID node_at_center_of_i
         [this](const auto current_max, const auto current_eid) {
             return std::max(
                 current_max,
-                node_data_container[node_based_graph.GetEdgeData(current_eid).shared_data_id].road_classification.GetNumberOfLanes());
+                node_based_graph.GetEdgeData(current_eid).flags.road_classification.GetNumberOfLanes());
         });
 
     for (const EdgeID edge_connected_to_intersection :

@@ -22,7 +22,7 @@ struct NodeBasedEdgeData
 {
     NodeBasedEdgeData()
         : weight(INVALID_EDGE_WEIGHT), duration(INVALID_EDGE_WEIGHT), edge_id(SPECIAL_NODEID),
-          reversed(false), shared_data_id(-1)
+          reversed(false), annotation_data(-1)
     {
     }
 
@@ -30,9 +30,9 @@ struct NodeBasedEdgeData
                       EdgeWeight duration,
                       unsigned edge_id,
                       bool reversed,
-                      extractor::SharedDataID shared_data_id)
+                      extractor::AnnotationID annotation_data)
         : weight(weight), duration(duration), edge_id(edge_id), reversed(reversed),
-          shared_data_id(shared_data_id)
+          annotation_data(annotation_data)
     {
     }
 
@@ -40,13 +40,15 @@ struct NodeBasedEdgeData
     EdgeWeight duration;
     unsigned edge_id;
     bool reversed : 1;
-    extractor::SharedDataID shared_data_id;
+    extractor::NodeBasedEdgeClassification flags;
+    extractor::AnnotationID annotation_data;
 
     bool IsCompatibleTo(const NodeBasedEdgeData &other) const
     {
-        return (reversed == other.reversed) && shared_data_id == other.shared_data_id;
+        return (reversed == other.reversed) && annotation_data == other.annotation_data;
     }
 
+    // TODO check names
     bool CanCombineWith(const NodeBasedEdgeData &other) const { return IsCompatibleTo(other); }
 };
 
@@ -67,7 +69,8 @@ NodeBasedDynamicGraphFromEdges(NodeID number_of_nodes,
            const extractor::NodeBasedEdge &input_edge) {
             output_edge.data.weight = input_edge.weight;
             output_edge.data.duration = input_edge.duration;
-            output_edge.data.shared_data_id = input_edge.shared_data_id;
+            output_edge.data.flags = input_edge.flags;
+            output_edge.data.annotation_data = input_edge.annotation_data;
 
             BOOST_ASSERT(output_edge.data.weight > 0);
             BOOST_ASSERT(output_edge.data.duration > 0);

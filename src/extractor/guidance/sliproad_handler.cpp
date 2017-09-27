@@ -111,8 +111,7 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
             return false;
         }
 
-        const auto &road_data =
-            node_data_container[node_based_graph.GetEdgeData(road.eid).shared_data_id];
+        const auto &road_data = node_based_graph.GetEdgeData(road.eid).flags;
 
         auto is_roundabout = road_data.roundabout;
 
@@ -160,7 +159,7 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
     for (const auto &road : main_road_intersection->intersection)
     {
         const auto &target_data =
-            node_data_container[node_based_graph.GetEdgeData(road.eid).shared_data_id];
+            node_data_container[node_based_graph.GetEdgeData(road.eid).annotation_data];
         target_road_name_ids.push_back(target_data.name_id);
     }
 
@@ -177,10 +176,7 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
             continue;
 
         auto &sliproad = intersection[road_index]; // this is what we're checking and assigning to
-        const auto &sliproad_edge_data =
-            node_based_graph.GetEdgeData(sliproad.eid);
-        const auto &sliproad_data =
-            node_data_container[sliproad_edge_data.shared_data_id];
+        const auto &sliproad_edge_data = node_based_graph.GetEdgeData(sliproad.eid);
 
         // Intersection is orderd: 0 is UTurn, then from sharp right to sharp left.
         // We already have an obvious index (bc) for going straight-ish.
@@ -197,8 +193,7 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
             return main_road_intersection->intersection.getRightmostRoad();
         }();
 
-        const auto &crossing_road_data =
-            node_based_graph.GetEdgeData(crossing_road.eid);
+        const auto &crossing_road_data = node_based_graph.GetEdgeData(crossing_road.eid);
 
         // The crossing road at the main road's intersection must not be incoming-only
         if (crossing_road_data.reversed)
@@ -207,7 +202,7 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
         }
 
         // Discard service and other low priority roads - never Sliproad candidate
-        if (sliproad_data.road_classification.IsLowPriorityRoadClass())
+        if (sliproad_edge_data.flags.road_classification.IsLowPriorityRoadClass())
         {
             continue;
         }
@@ -358,8 +353,7 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
                 continue;
             }
 
-            const auto &onto_data =
-                node_data_container[node_based_graph.GetEdgeData(onto.eid).shared_data_id];
+            const auto &onto_data = node_based_graph.GetEdgeData(onto.eid).flags;
 
             if (onto_data.roundabout)
             {
@@ -443,8 +437,8 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
 
                 // Check sliproads with skew main intersections
                 if (deviation_from_straight > perpendicular_angle &&
-                    !node_data_container[node_based_graph.GetEdgeData(sliproad.eid).shared_data_id]
-                         .road_classification.IsLinkClass())
+                    !node_based_graph.GetEdgeData(sliproad.eid)
+                         .flags.road_classification.IsLinkClass())
                 {
                     continue;
                 }
@@ -459,9 +453,10 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
         //           `  .
         //              d
         //
-        const auto area_threshold = std::pow(
-            scaledThresholdByRoadClass(MAX_SLIPROAD_THRESHOLD, sliproad_data.road_classification),
-            2.);
+        const auto area_threshold =
+            std::pow(scaledThresholdByRoadClass(MAX_SLIPROAD_THRESHOLD,
+                                                sliproad_edge_data.flags.road_classification),
+                     2.);
 
         if (!isValidSliproadArea(area_threshold,
                                  intersection_node_id,
@@ -476,7 +471,7 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
         {
             const auto &candidate_data =
                 node_data_container[node_based_graph.GetEdgeData(candidate_road.eid)
-                                        .shared_data_id];
+                                        .annotation_data];
 
             // Name mismatch: check roads at `c` and `d` for same name
             const auto name_mismatch = [&](const NameID road_name_id) {
@@ -542,7 +537,7 @@ operator()(const NodeID /*nid*/, const EdgeID source_edge_id, Intersection inter
             intersection[*obvious].instruction.direction_modifier =
                 getTurnDirection(intersection[*obvious].angle);
         }
-        else if (node_data_container[node_based_graph.GetEdgeData(main_road.eid).shared_data_id]
+        else if (node_data_container[node_based_graph.GetEdgeData(main_road.eid).annotation_data]
                      .name_id != EMPTY_NAMEID)
         {
             intersection[*obvious].instruction.type = TurnType::NewName;
@@ -625,7 +620,7 @@ bool SliproadHandler::nextIntersectionIsTooFarAway(const NodeID start, const Edg
     const auto &coordinate_extractor = intersection_generator.GetCoordinateExtractor();
 
     // Base max distance threshold on the current road class we're on
-    const auto &data = node_data_container[node_based_graph.GetEdgeData(onto).shared_data_id];
+    const auto &data = node_based_graph.GetEdgeData(onto).flags;
     const auto threshold = scaledThresholdByRoadClass(MAX_SLIPROAD_THRESHOLD, // <- scales down
                                                       data.road_classification);
 
@@ -644,14 +639,14 @@ bool SliproadHandler::isThroughStreet(const EdgeID from, const IntersectionView 
     BOOST_ASSERT(!intersection.empty());
 
     const auto &edge_name_id =
-        node_data_container[node_based_graph.GetEdgeData(from).shared_data_id].name_id;
+        node_data_container[node_based_graph.GetEdgeData(from).annotation_data].name_id;
 
     auto first = begin(intersection) + 1; // Skip UTurn road
     auto last = end(intersection);
 
     auto same_name = [&](const auto &road) {
         const auto &road_name_id =
-            node_data_container[node_based_graph.GetEdgeData(road.eid).shared_data_id].name_id;
+            node_data_container[node_based_graph.GetEdgeData(road.eid).annotation_data].name_id;
 
         return edge_name_id != EMPTY_NAMEID && //
                road_name_id != EMPTY_NAMEID && //
@@ -667,10 +662,11 @@ bool SliproadHandler::isThroughStreet(const EdgeID from, const IntersectionView 
 bool SliproadHandler::roadContinues(const EdgeID current, const EdgeID next) const
 {
     const auto &current_data =
-        node_data_container[node_based_graph.GetEdgeData(current).shared_data_id];
-    const auto &next_data = node_data_container[node_based_graph.GetEdgeData(next).shared_data_id];
+        node_data_container[node_based_graph.GetEdgeData(current).annotation_data];
+    const auto &next_data = node_data_container[node_based_graph.GetEdgeData(next).annotation_data];
 
-    auto same_road_category = current_data.road_classification == next_data.road_classification;
+    auto same_road_category = node_based_graph.GetEdgeData(current).flags.road_classification ==
+                              node_based_graph.GetEdgeData(next).flags.road_classification;
     auto same_travel_mode = current_data.travel_mode == next_data.travel_mode;
 
     auto same_name = current_data.name_id != EMPTY_NAMEID && //
@@ -718,24 +714,21 @@ bool SliproadHandler::isValidSliproadLink(const IntersectionViewData &sliproad,
                                           const IntersectionViewData &second) const
 {
     // If the Sliproad is not a link we don't care
-    const auto &sliproad_data =
-        node_data_container[node_based_graph.GetEdgeData(sliproad.eid).shared_data_id];
+    const auto &sliproad_data = node_based_graph.GetEdgeData(sliproad.eid).flags;
     if (!sliproad_data.road_classification.IsLinkClass())
     {
         return true;
     }
 
     // otherwise neither the first road leading to the intersection we shortcut
-    const auto &first_road_data =
-        node_data_container[node_based_graph.GetEdgeData(first.eid).shared_data_id];
+    const auto &first_road_data = node_based_graph.GetEdgeData(first.eid).flags;
     if (first_road_data.road_classification.IsLinkClass())
     {
         return false;
     }
 
     // nor the second road coming from the intersection we shotcut must be links
-    const auto &second_road_data =
-        node_data_container[node_based_graph.GetEdgeData(second.eid).shared_data_id];
+    const auto &second_road_data = node_based_graph.GetEdgeData(second.eid).flags;
     if (second_road_data.road_classification.IsLinkClass())
     {
         return false;
@@ -748,12 +741,12 @@ bool SliproadHandler::allSameMode(const EdgeID from,
                                   const EdgeID sliproad_candidate,
                                   const EdgeID target_road) const
 {
-    return node_data_container[node_based_graph.GetEdgeData(from).shared_data_id].travel_mode ==
-               node_data_container[node_based_graph.GetEdgeData(sliproad_candidate).shared_data_id]
+    return node_data_container[node_based_graph.GetEdgeData(from).annotation_data].travel_mode ==
+               node_data_container[node_based_graph.GetEdgeData(sliproad_candidate).annotation_data]
                    .travel_mode &&
-           node_data_container[node_based_graph.GetEdgeData(sliproad_candidate).shared_data_id]
+           node_data_container[node_based_graph.GetEdgeData(sliproad_candidate).annotation_data]
                    .travel_mode ==
-               node_data_container[node_based_graph.GetEdgeData(target_road).shared_data_id]
+               node_data_container[node_based_graph.GetEdgeData(target_road).annotation_data]
                    .travel_mode;
 }
 

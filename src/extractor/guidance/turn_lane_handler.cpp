@@ -150,7 +150,7 @@ TurnLaneScenario TurnLaneHandler::deduceScenario(const NodeID at,
                                                  LaneDescriptionID &previous_description_id)
 {
     // as long as we don't want to emit lanes on roundabout, don't assign them
-    if (node_data_container[node_based_graph.GetEdgeData(via_edge).shared_data_id].roundabout)
+    if (node_based_graph.GetEdgeData(via_edge).flags.roundabout)
         return TurnLaneScenario::NONE;
 
     // really don't touch roundabouts (#2626)
@@ -180,7 +180,7 @@ TurnLaneScenario TurnLaneHandler::deduceScenario(const NodeID at,
         (intersection.size() == 2 &&
          ((lane_description_id != INVALID_LANE_DESCRIPTIONID &&
            lane_description_id ==
-               node_data_container[node_based_graph.GetEdgeData(intersection[1].eid).shared_data_id]
+               node_data_container[node_based_graph.GetEdgeData(intersection[1].eid).annotation_data]
                    .lane_description_id) &&
           angularDeviation(intersection[1].angle, STRAIGHT_ANGLE) < FUZZY_ANGLE_DIFFERENCE));
 
@@ -370,7 +370,7 @@ void TurnLaneHandler::extractLaneData(const EdgeID via_edge,
                                       LaneDataVector &lane_data) const
 {
     const auto &edge_data =
-        node_data_container[node_based_graph.GetEdgeData(via_edge).shared_data_id];
+        node_data_container[node_based_graph.GetEdgeData(via_edge).annotation_data];
     lane_description_id = edge_data.lane_description_id;
     // create an empty lane data
     if (INVALID_LANE_DESCRIPTIONID != lane_description_id)
@@ -722,10 +722,10 @@ Intersection TurnLaneHandler::handleSliproadTurn(Intersection intersection,
             return previous_intersection[sliproad_index + 1];
     }();
     const auto main_description_id =
-        node_data_container[node_based_graph.GetEdgeData(main_road.eid).shared_data_id]
+        node_data_container[node_based_graph.GetEdgeData(main_road.eid).annotation_data]
             .lane_description_id;
     const auto sliproad_description_id =
-        node_data_container[node_based_graph.GetEdgeData(sliproad.eid).shared_data_id]
+        node_data_container[node_based_graph.GetEdgeData(sliproad.eid).annotation_data]
             .lane_description_id;
 
     if (main_description_id == INVALID_LANE_DESCRIPTIONID ||

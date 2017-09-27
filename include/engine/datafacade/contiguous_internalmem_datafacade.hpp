@@ -365,8 +365,8 @@ class ContiguousInternalMemoryDataFacadeBase : public BaseDataFacade
         */
 
         const auto annotation_data_list_ptr =
-            layout.GetBlockPtr<extractor::NodeBasedEdgeSharedData>(memory_ptr, storage::DataLayout::ANNOTATION_DATA_LIST);
-        util::vector_view<extractor::NodeBasedEdgeSharedData> annotation_data(
+            layout.GetBlockPtr<extractor::NodeBasedEdgeAnnotation>(memory_ptr, storage::DataLayout::ANNOTATION_DATA_LIST);
+        util::vector_view<extractor::NodeBasedEdgeAnnotation> annotation_data(
             annotation_data_list_ptr, layout.num_entries[storage::DataLayout::ANNOTATION_DATA_LIST]);
         edge_based_node_data = extractor::EdgeBasedNodeDataView(std::move(annotation_data));
     }

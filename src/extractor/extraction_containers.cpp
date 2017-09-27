@@ -67,8 +67,8 @@ struct CmpEdgeByInternalSourceTargetAndName
         if (lhs.result.target == SPECIAL_NODEID)
             return false;
 
-        auto const lhs_name_id = edge_shared_data[lhs.result.shared_data_id].name_id;
-        auto const rhs_name_id = edge_shared_data[rhs.result.shared_data_id].name_id;
+        auto const lhs_name_id = edge_annotation_data[lhs.result.annotation_data].name_id;
+        auto const rhs_name_id = edge_annotation_data[rhs.result.annotation_data].name_id;
         if (lhs_name_id == rhs_name_id)
             return false;
 
@@ -86,7 +86,7 @@ struct CmpEdgeByInternalSourceTargetAndName
                                             data + name_offsets[rhs_name_id + 1]);
     }
 
-    const oe::ExtractionContainers::EdgeSharedDataVector &edge_shared_data;
+    const oe::ExtractionContainers::AnnotationDataVector &edge_annotation_data;
     const oe::ExtractionContainers::NameCharData &name_data;
     const oe::ExtractionContainers::NameOffsets &name_offsets;
 };
@@ -365,7 +365,7 @@ void ExtractionContainers::PrepareEdges(ScriptingEnvironment &scripting_environm
             util::Coordinate target_coord{node_iterator->lon, node_iterator->lat};
 
             // flip source and target coordinates if segment is in backward direction only
-            if (!edge_iterator->result.forward && edge_iterator->result.backward)
+            if (!edge_iterator->result.flags.forward && edge_iterator->result.flags.backward)
                 std::swap(source_coord, target_coord);
 
             const auto distance =
@@ -393,9 +393,9 @@ void ExtractionContainers::PrepareEdges(ScriptingEnvironment &scripting_environm
                 std::swap(edge.source, edge.target);
 
                 // std::swap does not work with bit-fields
-                bool temp = edge.forward;
-                edge.forward = edge.backward;
-                edge.backward = temp;
+                bool temp = edge.flags.forward;
+                edge.flags.forward = edge.flags.backward;
+                edge.flags.backward = temp;
             }
             ++edge_iterator;
         }
@@ -419,7 +419,7 @@ void ExtractionContainers::PrepareEdges(ScriptingEnvironment &scripting_environm
         std::mutex name_data_mutex;
         tbb::parallel_sort(all_edges_list.begin(),
                            all_edges_list.end(),
-                           CmpEdgeByInternalSourceTargetAndName{all_edges_shared_data_list, name_char_data, name_offsets});
+                           CmpEdgeByInternalSourceTargetAndName{all_edges_annotation_data_list, name_char_data, name_offsets});
         TIMER_STOP(sort_edges_by_renumbered_start);
         log << "ok, after " << TIMER_SEC(sort_edges_by_renumbered_start) << "s";
     }
@@ -456,12 +456,12 @@ void ExtractionContainers::PrepareEdges(ScriptingEnvironment &scripting_environm
         {
             const auto &result = all_edges_list[i].result;
             const auto value = std::make_pair(result.weight, result.duration);
-            if (result.forward && value < min_forward)
+            if (result.flags.forward && value < min_forward)
             {
                 min_forward_idx = i;
                 min_forward = value;
             }
-            if (result.backward && value < min_backward)
+            if (result.flags.backward && value < min_backward)
             {
                 min_backward_idx = i;
                 min_backward = value;
@@ -480,9 +480,9 @@ void ExtractionContainers::PrepareEdges(ScriptingEnvironment &scripting_environm
 
         if (min_backward_idx == min_forward_idx)
         {
-            all_edges_list[min_forward_idx].result.is_split = false;
-            all_edges_list[min_forward_idx].result.forward = true;
-            all_edges_list[min_forward_idx].result.backward = true;
+            all_edges_list[min_forward_idx].result.flags.is_split = false;
+            all_edges_list[min_forward_idx].result.flags.forward = true;
+            all_edges_list[min_forward_idx].result.flags.backward = true;
         }
         else
         {
@@ -490,17 +490,17 @@ void ExtractionContainers::PrepareEdges(ScriptingEnvironment &scripting_environm
             bool has_backward = min_backward_idx != std::numeric_limits<std::size_t>::max();
             if (has_forward)
             {
-                all_edges_list[min_forward_idx].result.forward = true;
-                all_edges_list[min_forward_idx].result.backward = false;
-                all_edges_list[min_forward_idx].result.is_split = has_backward;
+                all_edges_list[min_forward_idx].result.flags.forward = true;
+                all_edges_list[min_forward_idx].result.flags.backward = false;
+                all_edges_list[min_forward_idx].result.flags.is_split = has_backward;
             }
             if (has_backward)
             {
                 std::swap(all_edges_list[min_backward_idx].result.source,
                           all_edges_list[min_backward_idx].result.target);
-                all_edges_list[min_backward_idx].result.forward = true;
-                all_edges_list[min_backward_idx].result.backward = false;
-                all_edges_list[min_backward_idx].result.is_split = has_forward;
+                all_edges_list[min_backward_idx].result.flags.forward = true;
+                all_edges_list[min_backward_idx].result.flags.backward = false;
+                all_edges_list[min_backward_idx].result.flags.is_split = has_forward;
             }
         }
 
@@ -559,12 +559,12 @@ void ExtractionContainers::WriteMetadata(storage::io::FileWriter &file_out) cons
     log << "Writing way meta-data     ... " << std::flush;
     TIMER_START(write_meta_data);
 
-    file_out.WriteElementCount64(all_edges_shared_data_list.size());
-    file_out.WriteFrom(all_edges_shared_data_list.data(), all_edges_shared_data_list.size());
+    file_out.WriteElementCount64(all_edges_annotation_data_list.size());
+    file_out.WriteFrom(all_edges_annotation_data_list.data(), all_edges_annotation_data_list.size());
 
     TIMER_STOP(write_meta_data);
     log << "ok, after " << TIMER_SEC(write_meta_data) << "s";
-    log << " -- Metadata contains << " << all_edges_shared_data_list.size() << " entries.";
+    log << " -- Metadata contains << " << all_edges_annotation_data_list.size() << " entries.";
 }
 
 void ExtractionContainers::WriteNodes(storage::io::FileWriter &file_out) const
