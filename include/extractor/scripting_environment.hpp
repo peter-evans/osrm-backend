@@ -37,7 +37,6 @@ class RestrictionParser;
 class ExtractionRelationContainer;
 struct ExtractionNode;
 struct ExtractionWay;
-struct ExtractionRelation;
 struct ExtractionTurn;
 struct ExtractionSegment;
 
@@ -68,7 +67,6 @@ class ScriptingEnvironment
         const ExtractionRelationContainer &relations,
         std::vector<std::pair<const osmium::Node &, ExtractionNode>> &resulting_nodes,
         std::vector<std::pair<const osmium::Way &, ExtractionWay>> &resulting_ways,
-        std::vector<std::pair<const osmium::Relation &, ExtractionRelation>> &resulting_relations,
         std::vector<InputConditionalTurnRestriction> &resulting_restrictions) = 0;
 };
 }

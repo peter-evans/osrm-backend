@@ -300,6 +300,7 @@ Extractor::ParseOSMData(ScriptingEnvironment &scripting_environment,
     unsigned number_of_nodes = 0;
     unsigned number_of_ways = 0;
     unsigned number_of_relations = 0;
+    unsigned number_of_restrictions = 0;
 
     util::Log() << "Parsing in progress..";
     TIMER_START(parsing);
@@ -332,8 +333,8 @@ Extractor::ParseOSMData(ScriptingEnvironment &scripting_environment,
                                            storage::io::FileWriter::GenerateFingerprint);
 
     timestamp_file.WriteFrom(timestamp.c_str(), timestamp.length());
+    reader->close();
 
-    ExtractionRelationContainer relations;
     std::vector<std::string> restrictions = scripting_environment.GetRestrictions();
     // setup restriction parser
     const RestrictionParser restriction_parser(
@@ -350,6 +351,8 @@ Extractor::ParseOSMData(ScriptingEnvironment &scripting_environment,
         std::vector<std::pair<const osmium::Relation &, ExtractionRelation>> resulting_relations;
         std::vector<InputConditionalTurnRestriction> resulting_restrictions;
     };
+
+    ExtractionRelationContainer relations;
 
     tbb::filter_t<void, SharedBuffer> buffer_reader(
         tbb::filter::serial_in_order, [&](tbb::flow_control &fc) {
@@ -375,7 +378,6 @@ Extractor::ParseOSMData(ScriptingEnvironment &scripting_environment,
                                                   relations,
                                                   parsed_buffer->resulting_nodes,
                                                   parsed_buffer->resulting_ways,
-                                                  parsed_buffer->resulting_relations,
                                                   parsed_buffer->resulting_restrictions);
             return parsed_buffer;
         });
@@ -395,55 +397,83 @@ Extractor::ParseOSMData(ScriptingEnvironment &scripting_environment,
             {
                 extractor_callbacks->ProcessWay(result.first, result.second);
             }
-        });
 
-    tbb::filter_t<std::shared_ptr<ParsedBuffer>, void> buffer_storage_relation(
-        tbb::filter::serial_in_order, [&](const std::shared_ptr<ParsedBuffer> parsed_buffer) {
-            if (!parsed_buffer)
-                return;
-
-            number_of_relations += parsed_buffer->resulting_relations.size();
-            for (const auto &result : parsed_buffer->resulting_relations)
-            {
-                /// TODO: add restriction processing
-                if (result.second.is_restriction)
-                    continue;
-
-                relations.AddRelation(result.second);
-            }
-
+            number_of_restrictions += parsed_buffer->resulting_restrictions.size();
             for (const auto &result : parsed_buffer->resulting_restrictions)
             {
                 extractor_callbacks->ProcessRestriction(result);
             }
         });
 
-    /* Main trick that we can use the same pipeline. It just receive relation objects
-     * from osmium. So other containers would be empty and doesn't process anything
-     */
-    util::Log() << "Parse relations ...";
-    tbb::parallel_pipeline(tbb::task_scheduler_init::default_num_threads() * 1.5,
-                           buffer_reader & buffer_transform & buffer_storage_relation);
-    reader->close();
+    tbb::filter_t<SharedBuffer, std::shared_ptr<ExtractionRelationContainer>> buffer_relation_cache(
+        tbb::filter::parallel, [&](const SharedBuffer buffer) {
+            if (!buffer)
+                return std::shared_ptr<ExtractionRelationContainer>{};
+
+            auto relations = std::make_shared<ExtractionRelationContainer>();
+            for (auto entity = buffer->cbegin(), end = buffer->cend(); entity != end; ++entity)
+            {
+                if (entity->type() != osmium::item_type::relation)
+                    continue;
+
+                const auto & rel = static_cast<const osmium::Relation &>(*entity);
+                ExtractionRelation extracted_rel;
+                extracted_rel.id = rel.id();
+
+                for (auto const & t : rel.tags())
+                    extracted_rel.attributes.emplace_back(std::make_pair(t.key(), t.value()));
+
+                for (auto const & m : rel.members())
+                {
+                    auto id = std::make_pair(m.ref(), m.type());
+                    extracted_rel.AddMember(id, m.role());
+                }
+            };
+            return relations;
+        });
+
+    tbb::filter_t<std::shared_ptr<ExtractionRelationContainer>, void> buffer_storage_relation(
+        tbb::filter::serial_in_order, [&](const std::shared_ptr<ExtractionRelationContainer> parsed_relations) {
+
+            number_of_relations += parsed_relations->GetRelationsNum();
+            relations.Merge(std::move(*parsed_relations));
+        });
+
+    {
+        reader.reset(new osmium::io::Reader(
+            input_file,
+            osmium::osm_entity_bits::relation,
+            (config.use_metadata ? osmium::io::read_meta::yes : osmium::io::read_meta::no)));
+
+        util::Log() << "Parse relations ...";
+        tbb::parallel_pipeline(tbb::task_scheduler_init::default_num_threads() * 1.5,
+                               buffer_reader & buffer_relation_cache & buffer_storage_relation);
+        reader->close();
+     }
 
     /* At this step we just filter ways and nodes from osmium, so any relation wouldn't be
      * processed there.
      */
-    util::Log() << "Parse ways and nodes ...";
-    reader.reset(new osmium::io::Reader(
-        input_file,
-        osmium::osm_entity_bits::node | osmium::osm_entity_bits::way,
-        (config.use_metadata ? osmium::io::read_meta::yes : osmium::io::read_meta::no)));
+    {
+        util::Log() << "Parse ways and nodes ...";
+        reader.reset(new osmium::io::Reader(
+            input_file,
+            osmium::osm_entity_bits::node | osmium::osm_entity_bits::way,
+            (config.use_metadata ? osmium::io::read_meta::yes : osmium::io::read_meta::no)));
 
-    // Number of pipeline tokens that yielded the best speedup was about 1.5 * num_cores
-    tbb::parallel_pipeline(tbb::task_scheduler_init::default_num_threads() * 1.5,
-                           buffer_reader & buffer_transform & buffer_storage);
+        // Number of pipeline tokens that yielded the best speedup was about 1.5 * num_cores
+        tbb::parallel_pipeline(tbb::task_scheduler_init::default_num_threads() * 1.5,
+                               buffer_reader & buffer_transform & buffer_storage);
+
+        reader->close();
+    }
 
     TIMER_STOP(parsing);
     util::Log() << "Parsing finished after " << TIMER_SEC(parsing) << " seconds";
 
     util::Log() << "Raw input contains " << number_of_nodes << " nodes, " << number_of_ways
-                << " ways, and " << number_of_relations << " relations";
+                << " ways, and " << number_of_relations << " relations, " << number_of_restrictions
+                << " restrictions";
 
     extractor_callbacks.reset();
 
